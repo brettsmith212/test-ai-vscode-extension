@@ -1,0 +1,26 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom styles for messages and errors */
+.message {
+  margin-bottom: 1rem;
+  padding: 0.5rem;
+  border-radius: 4px;
+}
+
+.user-message {
+  background-color: rgba(0, 0, 0, 0.1); /* Adjust for theme */
+}
+
+.assistant-message {
+  background-color: rgba(0, 0, 255, 0.1); /* Adjust for theme */
+}
+
+.error {
+  color: #e74c3c;
+  padding: 0.5rem;
+  margin: 0.5rem;
+  border: 1px solid #e74c3c;
+  border-radius: 4px;
+}

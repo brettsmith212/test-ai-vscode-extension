@@ -29,12 +29,12 @@ export class ChatPanel {
             {
                 enableScripts: true,
                 localResourceRoots: [
-                    vscode.Uri.joinPath(_extensionUri, 'media')
+                    vscode.Uri.joinPath(_extensionUri, 'media', 'webviews', 'build')
                 ]
             }
         );
 
-        this._panel.webview.html = getWebviewContent(this._panel.webview);
+        this._panel.webview.html = getWebviewContent(this._panel.webview, this._extensionUri);
 
         this._panel.webview.onDidReceiveMessage(
             async (message: WebviewMessage) => {
