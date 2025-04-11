@@ -53,6 +53,12 @@ class ChatPanel {
 					case 'sendMessage':
 						await this._handleSendMessage(message.text);
 						break;
+					case 'newThread':
+						this._conversationHistory = [];
+						this._panel.webview.postMessage({
+							command: 'clearChat'
+						});
+						break;
 				}
 			},
 			null,
@@ -178,6 +184,33 @@ class ChatPanel {
 					flex-direction: column;
 					height: 100vh;
 				}
+				.header {
+					display: flex;
+					justify-content: flex-end;
+					padding: 0.5rem 1rem;
+					border-bottom: 1px solid var(--vscode-panel-border);
+				}
+				.new-thread-button {
+					background: none;
+					border: none;
+					color: var(--vscode-editor-foreground);
+					cursor: pointer;
+					padding: 0.75rem;
+					display: flex;
+					align-items: center;
+					opacity: 0.7;
+					transition: all 0.2s ease;
+					border-radius: 4px;
+				}
+				.new-thread-button:hover {
+					opacity: 1;
+					background-color: var(--vscode-toolbar-hoverBackground);
+					transform: scale(1.1);
+				}
+				.new-thread-button svg {
+					width: 20px;
+					height: 20px;
+				}
 				.chat-container {
 					display: flex;
 					flex-direction: column;
@@ -248,6 +281,13 @@ class ChatPanel {
 			</style>
 		</head>
 		<body>
+			<div class="header">
+				<button class="new-thread-button" title="Start new thread">
+					<svg width="20" height="20" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+						<path d="M13.83 2.17l-1.42-1.42c-.39-.39-1.02-.39-1.41 0L3.83 7.92l-.82 2.87c-.09.34.22.65.56.56l2.87-.82L13.83 3.58c.39-.38.39-1.02 0-1.41zM6.87 9.64l-1.87.53.53-1.87 4.55-4.55 1.34 1.34-4.55 4.55z" fill="currentColor"/>
+					</svg>
+				</button>
+			</div>
 			<div class="chat-container" id="chat-container"></div>
 			<div class="input-container">
 				<textarea id="message-input" placeholder="Type your message here boss" rows="3"></textarea>
@@ -259,8 +299,19 @@ class ChatPanel {
 				const chatContainer = document.getElementById('chat-container');
 				const messageInput = document.getElementById('message-input');
 				const sendButton = document.getElementById('send-button');
+				const newThreadButton = document.querySelector('.new-thread-button');
 
 				let currentAssistantMessage = null;
+
+				// Handle new thread button click
+				newThreadButton.addEventListener('click', () => {
+					// Clear chat container
+					chatContainer.innerHTML = '';
+					// Send message to extension to clear history
+					vscode.postMessage({
+						command: 'newThread'
+					});
+				});
 
 				// Add event listener to send button
 				sendButton.addEventListener('click', sendMessage);
@@ -303,6 +354,9 @@ class ChatPanel {
 							break;
 						case 'error':
 							showError(message.text);
+							break;
+						case 'clearChat':
+							clearChat();
 							break;
 					}
 				});
@@ -362,6 +416,11 @@ class ChatPanel {
 					errorElement.textContent = text;
 					chatContainer.appendChild(errorElement);
 					chatContainer.scrollTop = chatContainer.scrollHeight;
+				}
+
+				// Clear the chat
+				function clearChat() {
+					chatContainer.innerHTML = '';
 				}
 			</script>
 		</body>
