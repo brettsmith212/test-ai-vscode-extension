@@ -111,6 +111,11 @@ class ChatPanel {
 				text: text
 			});
 
+			// Initialize assistant response container
+			this._panel.webview.postMessage({
+				command: 'startAssistantResponse'
+			});
+
 			// Create message stream
 			const stream = await anthropic.messages.create({
 				messages: [{ role: 'user', content: text }],
@@ -130,6 +135,11 @@ class ChatPanel {
 					});
 				}
 			}
+
+			// Mark the response as complete
+			this._panel.webview.postMessage({
+				command: 'completeAssistantResponse'
+			});
 
 		} catch (error) {
 			console.error('Error:', error);
