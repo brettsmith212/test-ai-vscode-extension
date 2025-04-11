@@ -27,6 +27,7 @@ class ChatPanel {
 	public static readonly viewType = 'claudeChat';
 	private readonly _panel: vscode.WebviewPanel;
 	private _disposables: vscode.Disposable[] = [];
+	private _conversationHistory: { role: 'user' | 'assistant', content: string }[] = [];
 
 	constructor(private readonly _extensionUri: vscode.Uri) {
 		// Create a new webview panel
@@ -100,6 +101,9 @@ class ChatPanel {
 				return;
 			}
 
+			// Add user message to history
+			this._conversationHistory.push({ role: 'user', content: text });
+
 			// Create Anthropic client
 			const anthropic = new Anthropic({
 				apiKey: apiKey
@@ -116,9 +120,11 @@ class ChatPanel {
 				command: 'startAssistantResponse'
 			});
 
+			let assistantResponse = '';
+
 			// Create message stream
 			const stream = await anthropic.messages.create({
-				messages: [{ role: 'user', content: text }],
+				messages: this._conversationHistory,
 				model: 'claude-3-opus-20240229',
 				max_tokens: 4096,
 				stream: true
@@ -129,12 +135,16 @@ class ChatPanel {
 				if (chunk.type === 'content_block_delta' &&
 				    'text' in chunk.delta &&
 				    typeof chunk.delta.text === 'string') {
+					assistantResponse += chunk.delta.text;
 					this._panel.webview.postMessage({
 						command: 'appendAssistantResponse',
 						text: chunk.delta.text
 					});
 				}
 			}
+
+			// Add assistant response to history
+			this._conversationHistory.push({ role: 'assistant', content: assistantResponse });
 
 			// Mark the response as complete
 			this._panel.webview.postMessage({
