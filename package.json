@@ -34,12 +34,20 @@
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
     "pretest": "npm run compile && npm run lint",
-    "lint": "eslint src",
+    "lint": "eslint src webviews",
     "test": "vscode-test",
     "build:webviews": "vite build",
-    "watch:webviews": "vite"
+    "watch:webviews": "vite",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build"
   },
   "devDependencies": {
+    "@storybook/addon-essentials": "^8.6.12",
+    "@storybook/blocks": "^8.6.12",
+    "@storybook/builder-vite": "^8.6.12",
+    "@storybook/react": "^8.6.12",
+    "@storybook/react-vite": "^8.6.12",
+    "@storybook/testing-library": "^0.2.1",
     "@types/mocha": "^10.0.10",
     "@types/node": "20.x",
     "@types/react": "^18.0.0",
