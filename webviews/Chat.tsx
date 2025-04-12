@@ -9,12 +9,33 @@ interface Message {
     content: string;
 }
 
+interface WebviewState {
+    messages: Message[];
+    errorMessages: string[];
+}
+
 const ChatInner: React.FC = () => {
     const vscode = useVSCode();
-    const [messages, setMessages] = useState<Message[]>([]);
+    const [messages, setMessages] = useState<Message[]>(() => {
+        const savedState = vscode.getState() as WebviewState | undefined;
+        return savedState?.messages || [];
+    });
     const [messageInProgress, setMessageInProgress] = useState<Message | null>(null);
     const [isProcessing, setIsProcessing] = useState(false);
-    const [errorMessages, setErrorMessages] = useState<string[]>([]);
+    const [errorMessages, setErrorMessages] = useState<string[]>(() => {
+        const savedState = vscode.getState() as WebviewState | undefined;
+        return savedState?.errorMessages || [];
+    });
+
+    // Persist state whenever messages or errorMessages change
+    useEffect(() => {
+        vscode.setState({ messages, errorMessages });
+    }, [messages, errorMessages, vscode]);
+
+    // Request history restoration on mount
+    useEffect(() => {
+        vscode.postMessage({ command: 'restoreHistory' });
+    }, [vscode]);
 
     useEffect(() => {
         const handleMessage = (event: MessageEvent) => {
@@ -44,6 +65,7 @@ const ChatInner: React.FC = () => {
                     setMessages([]);
                     setMessageInProgress(null);
                     setErrorMessages([]);
+                    vscode.setState({ messages: [], errorMessages: [] });
                     break;
             }
         };

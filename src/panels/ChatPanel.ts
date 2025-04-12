@@ -10,18 +10,24 @@ export class ChatPanel {
     private _disposables: vscode.Disposable[] = [];
     private _conversationHistory: Message[] = [];
     private _chatService: ChatService;
+    private readonly _context: vscode.ExtensionContext;
 
     private static _instance: ChatPanel | undefined;
 
-    public static getInstance(extensionUri: vscode.Uri): ChatPanel {
+    public static getInstance(extensionUri: vscode.Uri, context: vscode.ExtensionContext): ChatPanel {
         if (!ChatPanel._instance) {
-            ChatPanel._instance = new ChatPanel(extensionUri);
+            ChatPanel._instance = new ChatPanel(extensionUri, context);
         }
         return ChatPanel._instance;
     }
 
-    private constructor(private readonly _extensionUri: vscode.Uri) {
+    private constructor(private readonly _extensionUri: vscode.Uri, context: vscode.ExtensionContext) {
+        this._context = context;
         this._chatService = new ChatService();
+
+        // Load conversation history from global state
+        const savedHistory = this._context.globalState.get<Message[]>('claudeChatHistory', []);
+        this._conversationHistory = savedHistory;
 
         this._panel = vscode.window.createWebviewPanel(
             ChatPanel.viewType,
@@ -31,12 +37,14 @@ export class ChatPanel {
                 enableScripts: true,
                 localResourceRoots: [
                     vscode.Uri.joinPath(_extensionUri, 'media', 'build')
-                ]
+                ],
+                retainContextWhenHidden: true // Prevent webview from being reset when hidden
             }
         );
 
         this._panel.webview.html = getWebviewContent(this._panel.webview, this._extensionUri);
 
+        // Restore conversation history to webview
         this._panel.webview.onDidReceiveMessage(
             async (message: WebviewMessage) => {
                 switch (message.command) {
@@ -47,6 +55,27 @@ export class ChatPanel {
                         break;
                     case 'newThread':
                         this._startNewThread();
+                        break;
+                    case 'restoreHistory':
+                        this._conversationHistory.forEach(msg => {
+                            let text: string;
+                            if (typeof msg.content === 'string') {
+                                text = msg.content;
+                            } else {
+                                text = msg.content
+                                    .map(block => {
+                                        if (block.type === 'text') return block.text;
+                                        if (block.type === 'tool_use') return `[Tool: ${block.name}]`;
+                                        if (block.type === 'tool_result') return block.content;
+                                        return '';
+                                    })
+                                    .join('\n');
+                            }
+                            this._panel.webview.postMessage({
+                                command: msg.role === 'user' ? 'addUserMessage' : 'completeAssistantResponse',
+                                text
+                            });
+                        });
                         break;
                 }
             },
@@ -68,6 +97,7 @@ export class ChatPanel {
         try {
             // Add user message to history
             this._conversationHistory.push({ role: 'user', content: text });
+            this._updateGlobalState();
 
             // Post initial user message to UI
             this._panel.webview.postMessage({
@@ -102,11 +132,9 @@ export class ChatPanel {
                                 jsonAccumulator = '';
                             }
                         }
-                        // Ignore other block types
                     } else if (chunk.type === 'content_block_delta' && currentBlock !== null) {
                         if (currentBlock.type === 'text' && chunk.delta.type === 'text_delta') {
                             (currentBlock as Partial<TextBlock>).text += chunk.delta.text;
-                            // Stream text to UI
                             this._panel.webview.postMessage({
                                 command: 'appendAssistantResponse',
                                 text: chunk.delta.text
@@ -134,23 +162,30 @@ export class ChatPanel {
                             jsonAccumulator = '';
                         }
                     } else if (chunk.type === 'message_stop') {
-                        // Message is complete
                         break;
                     }
                 }
 
                 // Add assistant message to history
                 this._conversationHistory.push({ role: 'assistant', content: assistantContent });
+                this._updateGlobalState();
 
-                // Complete the current assistant response in UI
+                // Convert assistantContent to string for webview
+                const assistantText = assistantContent
+                    .map(block => {
+                        if (block.type === 'text') return block.text;
+                        if (block.type === 'tool_use') return `[Tool: ${block.name}]`;
+                        return '';
+                    })
+                    .join('\n');
                 this._panel.webview.postMessage({
-                    command: 'completeAssistantResponse'
+                    command: 'completeAssistantResponse',
+                    text: assistantText
                 });
 
                 // Check for tool use blocks
                 const toolUseBlocks = assistantContent.filter(block => block.type === 'tool_use') as ToolUseBlock[];
                 if (toolUseBlocks.length > 0) {
-                    // Execute tools
                     const toolResults: ToolResultBlock[] = await Promise.all(toolUseBlocks.map(async (block) => {
                         try {
                             const result = await executeTool(block.name, block.input);
@@ -161,13 +196,12 @@ export class ChatPanel {
                         }
                     }));
 
-                    // Add tool results to history
                     this._conversationHistory.push({ role: 'user', content: toolResults });
+                    this._updateGlobalState();
                 } else {
                     isProcessingTools = false;
                 }
             }
-
         } catch (error) {
             console.error('Error:', error);
             this._panel.webview.postMessage({
@@ -179,9 +213,14 @@ export class ChatPanel {
 
     private _startNewThread() {
         this._conversationHistory = [];
+        this._updateGlobalState();
         this._panel.webview.postMessage({
             command: 'clearChat'
         });
+    }
+
+    private _updateGlobalState() {
+        this._context.globalState.update('claudeChatHistory', this._conversationHistory);
     }
 
     public reveal() {
