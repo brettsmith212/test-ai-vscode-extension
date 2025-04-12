@@ -1,7 +1,8 @@
 import * as vscode from 'vscode';
 import { ChatService } from '../services/ChatService';
 import { getWebviewContent } from '../views/webview-content';
-import { Message, WebviewMessage } from '../types';
+import { Message, ContentBlock, TextBlock, ToolUseBlock, ToolResultBlock, WebviewMessage } from '../types';
+import { fileTools, executeTool } from '../tools/fileTools';
 
 export class ChatPanel {
     public static readonly viewType = 'claudeChat';
@@ -74,41 +75,98 @@ export class ChatPanel {
                 text: text
             });
 
-            // Initialize assistant response container
-            this._panel.webview.postMessage({
-                command: 'startAssistantResponse'
-            });
+            let isProcessingTools = true;
+            while (isProcessingTools) {
+                // Create message stream with tools
+                const stream = await this._chatService.createMessageStream(this._conversationHistory, fileTools);
 
-            let assistantResponse = '';
+                // Initialize assistant response container
+                this._panel.webview.postMessage({
+                    command: 'startAssistantResponse'
+                });
 
-            try {
-                // Create message stream
-                const stream = await this._chatService.createMessageStream(this._conversationHistory);
+                let assistantContent: ContentBlock[] = [];
+                let currentBlock: Partial<TextBlock | ToolUseBlock> | null = null;
+                let jsonAccumulator: string = '';
 
-                // Process the stream
                 for await (const chunk of stream) {
-                    if (chunk.type === 'content_block_delta' &&
-                        'text' in chunk.delta &&
-                        typeof chunk.delta.text === 'string') {
-                        assistantResponse += chunk.delta.text;
-                        this._panel.webview.postMessage({
-                            command: 'appendAssistantResponse',
-                            text: chunk.delta.text
-                        });
+                    if (chunk.type === 'content_block_start') {
+                        if (chunk.content_block.type === 'text' || chunk.content_block.type === 'tool_use') {
+                            currentBlock = { type: chunk.content_block.type };
+
+                            if (chunk.content_block.type === 'text') {
+                                (currentBlock as Partial<TextBlock>).text = '';
+                            } else if (chunk.content_block.type === 'tool_use') {
+                                (currentBlock as Partial<ToolUseBlock>).id = chunk.content_block.id;
+                                (currentBlock as Partial<ToolUseBlock>).name = chunk.content_block.name;
+                                jsonAccumulator = '';
+                            }
+                        }
+                        // Ignore other block types
+                    } else if (chunk.type === 'content_block_delta' && currentBlock !== null) {
+                        if (currentBlock.type === 'text' && chunk.delta.type === 'text_delta') {
+                            (currentBlock as Partial<TextBlock>).text += chunk.delta.text;
+                            // Stream text to UI
+                            this._panel.webview.postMessage({
+                                command: 'appendAssistantResponse',
+                                text: chunk.delta.text
+                            });
+                        } else if (currentBlock.type === 'tool_use' && chunk.delta.type === 'input_json_delta') {
+                            jsonAccumulator += chunk.delta.partial_json;
+                        }
+                    } else if (chunk.type === 'content_block_stop') {
+                        if (currentBlock !== null) {
+                            if (currentBlock.type === 'text') {
+                                assistantContent.push(currentBlock as TextBlock);
+                            } else if (currentBlock.type === 'tool_use') {
+                                try {
+                                    (currentBlock as Partial<ToolUseBlock>).input = jsonAccumulator ? JSON.parse(jsonAccumulator) : {};
+                                    assistantContent.push(currentBlock as ToolUseBlock);
+                                } catch (error) {
+                                    const errorMessage = error instanceof Error ? error.message : String(error);
+                                    assistantContent.push({
+                                        type: 'text',
+                                        text: `Error parsing tool input: ${errorMessage}`
+                                    });
+                                }
+                            }
+                            currentBlock = null;
+                            jsonAccumulator = '';
+                        }
+                    } else if (chunk.type === 'message_stop') {
+                        // Message is complete
+                        break;
                     }
                 }
 
-                // Add assistant response to history
-                this._conversationHistory.push({ role: 'assistant', content: assistantResponse });
+                // Add assistant message to history
+                this._conversationHistory.push({ role: 'assistant', content: assistantContent });
 
-            } catch (error) {
-                throw error;
+                // Complete the current assistant response in UI
+                this._panel.webview.postMessage({
+                    command: 'completeAssistantResponse'
+                });
+
+                // Check for tool use blocks
+                const toolUseBlocks = assistantContent.filter(block => block.type === 'tool_use') as ToolUseBlock[];
+                if (toolUseBlocks.length > 0) {
+                    // Execute tools
+                    const toolResults: ToolResultBlock[] = await Promise.all(toolUseBlocks.map(async (block) => {
+                        try {
+                            const result = await executeTool(block.name, block.input);
+                            return { type: 'tool_result', tool_use_id: block.id, content: result };
+                        } catch (error) {
+                            const errorMessage = error instanceof Error ? error.message : String(error);
+                            return { type: 'tool_result', tool_use_id: block.id, content: `Error: ${errorMessage}` };
+                        }
+                    }));
+
+                    // Add tool results to history
+                    this._conversationHistory.push({ role: 'user', content: toolResults });
+                } else {
+                    isProcessingTools = false;
+                }
             }
-
-            // Mark the response as complete
-            this._panel.webview.postMessage({
-                command: 'completeAssistantResponse'
-            });
 
         } catch (error) {
             console.error('Error:', error);
