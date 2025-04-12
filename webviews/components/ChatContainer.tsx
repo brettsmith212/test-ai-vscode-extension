@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { ScrollArea } from '../components/ui/scroll-area';
 import { Card, CardContent } from '../components/ui/card';
+import { Loader2 } from 'lucide-react';
 
 interface Message {
     role: 'user' | 'assistant';
@@ -80,8 +81,12 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ messages, messageInProgre
                         className="mr-auto bg-[var(--vscode-editorWidget-background)] text-[var(--vscode-editor-foreground)] max-w-[80%] border-[var(--vscode-panel-border)]"
                         key={messageInProgress.messageId}
                     >
-                        <CardContent className="p-4">
-                            <div className="text-sm whitespace-pre-wrap">{messageInProgress.content}</div>
+                        <CardContent className="p-4 flex items-center">
+                            {messageInProgress.content === '' ? (
+                                <Loader2 className="h-5 w-5 animate-spin text-[var(--vscode-editor-foreground)]" />
+                            ) : (
+                                <div className="text-sm whitespace-pre-wrap">{messageInProgress.content}</div>
+                            )}
                         </CardContent>
                     </Card>
                 )}
