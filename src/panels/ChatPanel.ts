@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import * as path from 'path';
 import { ChatService } from '../services/ChatService';
 import { getWebviewContent } from '../views/webview-content';
 import { Message, ContentBlock, TextBlock, ToolUseBlock, ToolResultBlock, WebviewMessage } from '../types';
@@ -122,6 +123,7 @@ export class ChatPanel {
                 let assistantContent: ContentBlock[] = [];
                 let currentBlock: Partial<TextBlock | ToolUseBlock> | null = null;
                 let jsonAccumulator: string = '';
+                let fileContents: { [toolUseId: string]: string } = {};
 
                 for await (const chunk of stream) {
                     if (chunk.type === 'content_block_start') {
@@ -194,20 +196,55 @@ export class ChatPanel {
                 if (toolUseBlocks.length > 0) {
                     const toolResults: ToolResultBlock[] = await Promise.all(toolUseBlocks.map(async (block) => {
                         try {
-                            const result = await executeTool(block.name, block.input, text.toLowerCase().includes('show me the contents'));
+                            const showContents = block.name === 'read_file' && text.toLowerCase().includes('show me the contents');
+                            const result = await executeTool(block.name, block.input, showContents);
+                            console.log(`handleSendMessage: Tool ${block.name} result for tool_use_id ${block.id}: ${result}`);
+                            // Store file content for read_file if not showing contents
+                            if (block.name === 'read_file' && !showContents) {
+                                try {
+                                    const uri = vscode.Uri.file(path.join(
+                                        vscode.workspace.workspaceFolders![0].uri.fsPath,
+                                        block.input.path
+                                    ));
+                                    const fileData = await vscode.workspace.fs.readFile(uri);
+                                    fileContents[block.id] = new TextDecoder().decode(fileData);
+                                    console.log(`handleSendMessage: Stored content for ${block.input.path}, length: ${fileContents[block.id].length}`);
+                                } catch (readError) {
+                                    console.error(`handleSendMessage: Failed to store content for ${block.input.path}:`, readError);
+                                }
+                            }
                             return { type: 'tool_result', tool_use_id: block.id, content: result };
                         } catch (error) {
                             const errorMessage = error instanceof Error ? error.message : String(error);
+                            console.log(`handleSendMessage: Tool ${block.name} error for tool_use_id ${block.id}: ${errorMessage}`);
                             return { type: 'tool_result', tool_use_id: block.id, content: `Error: ${errorMessage}` };
                         }
                     }));
 
-                    this._conversationHistory.push({ role: 'user', content: toolResults });
+                    // Append file contents to history for Claude to analyze
+                    if (Object.keys(fileContents).length > 0) {
+                        const contentBlocks: ContentBlock[] = toolResults.map(result => ({
+                            type: 'tool_result',
+                            tool_use_id: result.tool_use_id,
+                            content: result.content
+                        }));
+                        for (const result of toolResults) {
+                            if (fileContents[result.tool_use_id]) {
+                                contentBlocks.push({
+                                    type: 'text',
+                                    text: `Internal file content for analysis (not displayed): ${fileContents[result.tool_use_id]}`
+                                });
+                            }
+                        }
+                        this._conversationHistory.push({ role: 'user', content: contentBlocks });
+                    } else {
+                        this._conversationHistory.push({ role: 'user', content: toolResults });
+                    }
                     this._updateGlobalState();
 
                     // Display only tool results (skip read_file unless requested)
                     const toolResultText = toolResults
-                        .filter(result => result.content && (result.content !== '' || result.content.startsWith('Error')))
+                        .filter(result => result.content && (result.content !== 'Read successful' || result.content.startsWith('Error')))
                         .map(result => result.content)
                         .filter(Boolean)
                         .join('\n');
@@ -224,10 +261,14 @@ export class ChatPanel {
                 }
             }
         } catch (error) {
-            console.error('Error:', error);
+            console.error('handleSendMessage: Error:', error);
+            const errorMessage = error instanceof Error ? error.message : 'An error occurred while processing your request.';
+            const enhancedError = errorMessage.includes('cannot read') || errorMessage.includes('not found')
+                ? `${errorMessage}\nTry running VS Code as administrator, checking file permissions, or ensuring the workspace folder includes the file. Use 'list files' to verify file accessibility.`
+                : errorMessage;
             this._panel.webview.postMessage({
                 command: 'error',
-                text: error instanceof Error ? error.message : 'An error occurred while processing your request.'
+                text: enhancedError
             });
         }
     }
