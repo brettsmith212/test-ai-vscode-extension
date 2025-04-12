@@ -66,18 +66,19 @@ export class ChatPanel {
                                 text = msg.content
                                     .map(block => {
                                         if (block.type === 'text') return block.text;
-                                        if (block.type === 'tool_use') return `[Tool: ${block.name}]`;
                                         if (block.type === 'tool_result') return block.content;
                                         return '';
                                     })
                                     .filter(Boolean)
                                     .join('\n');
                             }
-                            this._panel.webview.postMessage({
-                                command: msg.role === 'user' ? 'addUserMessage' : 'addAssistantMessage',
-                                text,
-                                messageId: index
-                            });
+                            if (text) {
+                                this._panel.webview.postMessage({
+                                    command: msg.role === 'user' ? 'addUserMessage' : 'addAssistantMessage',
+                                    text,
+                                    messageId: index
+                                });
+                            }
                         });
                         break;
                 }
@@ -174,27 +175,26 @@ export class ChatPanel {
                 this._conversationHistory.push({ role: 'assistant', content: assistantContent });
                 this._updateGlobalState();
 
-                // Convert assistantContent to string for webview
+                // Only send text content to webview, skip tool use narration
                 const assistantText = assistantContent
-                    .map(block => {
-                        if (block.type === 'text') return block.text;
-                        if (block.type === 'tool_use') return `[Tool: ${block.name}]`;
-                        return '';
-                    })
+                    .filter(block => block.type === 'text')
+                    .map(block => (block as TextBlock).text)
                     .filter(Boolean)
                     .join('\n');
 
-                this._panel.webview.postMessage({
-                    command: 'addAssistantMessage',
-                    text: assistantText,
-                    messageId: this._conversationHistory.length - 1
-                });
+                if (assistantText) {
+                    this._panel.webview.postMessage({
+                        command: 'addAssistantMessage',
+                        text: assistantText,
+                        messageId: this._conversationHistory.length - 1
+                    });
+                }
 
                 const toolUseBlocks = assistantContent.filter(block => block.type === 'tool_use') as ToolUseBlock[];
                 if (toolUseBlocks.length > 0) {
                     const toolResults: ToolResultBlock[] = await Promise.all(toolUseBlocks.map(async (block) => {
                         try {
-                            const result = await executeTool(block.name, block.input);
+                            const result = await executeTool(block.name, block.input, text.toLowerCase().includes('show me the contents'));
                             return { type: 'tool_result', tool_use_id: block.id, content: result };
                         } catch (error) {
                             const errorMessage = error instanceof Error ? error.message : String(error);
@@ -205,11 +205,13 @@ export class ChatPanel {
                     this._conversationHistory.push({ role: 'user', content: toolResults });
                     this._updateGlobalState();
 
-                    // Display tool results in webview
+                    // Display only tool results (skip read_file unless requested)
                     const toolResultText = toolResults
+                        .filter(result => result.content && (result.content !== '' || result.content.startsWith('Error')))
                         .map(result => result.content)
                         .filter(Boolean)
                         .join('\n');
+
                     if (toolResultText) {
                         this._panel.webview.postMessage({
                             command: 'addAssistantMessage',

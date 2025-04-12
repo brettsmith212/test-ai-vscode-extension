@@ -40,7 +40,7 @@ export const fileTools: Anthropic.Tool[] = [
   },
   {
     name: "read_file",
-    description: "Reads the content of the file at the given path. Use this when you need to inspect the current state of a file. The path should be relative to the workspace root.",
+    description: "Reads the content of the file at the given path. Use this when you need to inspect the current state of a file to answer a question or perform an action. The path should be relative to the workspace root.",
     input_schema: {
       type: "object",
       properties: {
@@ -62,7 +62,7 @@ export const fileTools: Anthropic.Tool[] = [
   }
 ];
 
-export async function executeTool(toolName: string, input: any): Promise<string> {
+export async function executeTool(toolName: string, input: any, showContents: boolean = false): Promise<string> {
   const workspaceFolders = vscode.workspace.workspaceFolders;
   if (!workspaceFolders) {
     throw new Error("No workspace folder found.");
@@ -77,16 +77,17 @@ export async function executeTool(toolName: string, input: any): Promise<string>
         const uri = vscode.Uri.file(filePath);
         const encoder = new TextEncoder();
         await vscode.workspace.fs.writeFile(uri, encoder.encode(input.content));
-        return `File ${input.path} has been ${toolName === "create_file" ? "created" : "updated"} successfully.`;
+        return `File ${input.path} has been ${toolName === "create_file" ? "created" : "updated"}.`;
       case "delete_file":
         const deleteUri = vscode.Uri.file(filePath);
         await vscode.workspace.fs.delete(deleteUri);
-        return `File ${input.path} has been deleted successfully.`;
+        return `File ${input.path} has been deleted.`;
       case "read_file":
         const readUri = vscode.Uri.file(filePath);
         const fileData = await vscode.workspace.fs.readFile(readUri);
         const decoder = new TextDecoder();
-        return decoder.decode(fileData);
+        const content = decoder.decode(fileData);
+        return showContents ? content : '';
       case "search_files":
         const pattern = `**/*${input.query}*`;
         const uris = await vscode.workspace.findFiles(pattern, '**/node_modules/**', 100);
@@ -102,7 +103,7 @@ export async function executeTool(toolName: string, input: any): Promise<string>
           }
         });
 
-        return files.join('\n');
+        return files.length > 0 ? files.join('\n') : 'No matching files found.';
       default:
         throw new Error(`Unknown tool: ${toolName}`);
     }
@@ -116,25 +117,18 @@ export async function executeTool(toolName: string, input: any): Promise<string>
  * Search for files in the workspace that match the given query
  */
 export async function searchFiles(query: string): Promise<string[]> {
-  // Create a glob pattern for the search
   const pattern = `**/*${query}*`;
 
   try {
-    // Search workspace for files matching the pattern
     const uris = await vscode.workspace.findFiles(pattern, '**/node_modules/**', 100);
-
-    // Convert URIs to relative paths for better readability
     const files = uris.map(uri => {
-      // Get the workspace folder that contains this file
       const workspaceFolder = vscode.workspace.workspaceFolders?.find(folder =>
         uri.fsPath.startsWith(folder.uri.fsPath)
       );
 
       if (workspaceFolder) {
-        // Create path relative to workspace folder
         return path.relative(workspaceFolder.uri.fsPath, uri.fsPath);
       } else {
-        // Fall back to the absolute path if not in a workspace folder
         return uri.fsPath;
       }
     });

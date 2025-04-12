@@ -35,6 +35,9 @@ const ChatInner: React.FC = () => {
 
     // Request history restoration on mount
     useEffect(() => {
+        // Clear existing messages to prevent duplicates
+        setMessages([]);
+        setErrorMessages([]);
         vscode.postMessage({ command: 'restoreHistory' });
     }, [vscode]);
 
@@ -44,7 +47,6 @@ const ChatInner: React.FC = () => {
             switch (message.command) {
                 case 'addUserMessage':
                     setMessages(prev => {
-                        // Avoid duplicates by checking messageId
                         if (message.messageId && prev.some(msg => msg.messageId === message.messageId)) {
                             return prev;
                         }
@@ -53,16 +55,17 @@ const ChatInner: React.FC = () => {
                     break;
                 case 'addAssistantMessage':
                     setMessages(prev => {
-                        // Avoid duplicates by checking messageId
                         if (message.messageId && prev.some(msg => msg.messageId === message.messageId)) {
                             return prev;
                         }
                         return [...prev, { role: 'assistant', content: message.text, messageId: message.messageId }];
                     });
                     setIsProcessing(false);
+                    setMessageInProgress(null);
                     break;
                 case 'startAssistantResponse':
                     setMessageInProgress({ role: 'assistant', content: '', messageId: message.messageId });
+                    setIsProcessing(true);
                     break;
                 case 'appendAssistantResponse':
                     setMessageInProgress(prev => prev && prev.messageId === message.messageId 
@@ -72,6 +75,7 @@ const ChatInner: React.FC = () => {
                 case 'error':
                     setErrorMessages(prev => [...prev, message.text]);
                     setIsProcessing(false);
+                    setMessageInProgress(null);
                     break;
                 case 'clearChat':
                     setMessages([]);
