@@ -12,7 +12,6 @@ const InputContainer: React.FC<InputContainerProps> = ({ onSend, isProcessing })
     const [input, setInput] = useState('');
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-    // Keep focus on textarea when isProcessing changes
     useEffect(() => {
         textareaRef.current?.focus();
     }, [isProcessing]);
@@ -21,7 +20,6 @@ const InputContainer: React.FC<InputContainerProps> = ({ onSend, isProcessing })
         if (input.trim()) {
             onSend(input);
             setInput('');
-            // Focus will be handled by the useEffect
         }
     };
 
@@ -33,24 +31,27 @@ const InputContainer: React.FC<InputContainerProps> = ({ onSend, isProcessing })
     };
 
     return (
-        <div className="p-4 border-t border-border flex gap-2 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-            <Textarea
-                ref={textareaRef}
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Type your message..."
-                rows={3}
-                className="flex-1 resize-none text-foreground placeholder:text-muted-foreground"
-            />
-            <Button 
-                onClick={handleSend} 
-                disabled={isProcessing} 
-                size="icon"
-                className="h-auto"
-            >
-                <Send className="h-4 w-4" />
-            </Button>
+        <div className="p-4 border-t border-[var(--vscode-panel-border)] bg-[var(--vscode-editor-background)]">
+            <div className="flex gap-2">
+                <Textarea
+                    ref={textareaRef}
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder="Type a message..."
+                    disabled={isProcessing}
+                    className="min-h-[44px] max-h-[200px] bg-[var(--vscode-input-background)] text-[var(--vscode-input-foreground)] border-[var(--vscode-input-border)] focus-visible:ring-[var(--vscode-focusBorder)] placeholder:text-[var(--vscode-input-placeholderForeground)]"
+                    style={{ resize: 'none' }}
+                />
+                <Button
+                    onClick={handleSend}
+                    disabled={!input.trim() || isProcessing}
+                    size="icon"
+                    className="bg-[var(--vscode-button-background)] text-[var(--vscode-button-foreground)] hover:bg-[var(--vscode-button-hoverBackground)] disabled:opacity-50"
+                >
+                    <Send className="h-4 w-4" />
+                </Button>
+            </div>
         </div>
     );
 };
