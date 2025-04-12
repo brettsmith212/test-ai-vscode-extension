@@ -76,7 +76,7 @@ export class ChatPanel {
                             this._panel.webview.postMessage({
                                 command: msg.role === 'user' ? 'addUserMessage' : 'addAssistantMessage',
                                 text,
-                                messageId: index // Unique ID to track messages
+                                messageId: index
                             });
                         });
                         break;
@@ -204,6 +204,19 @@ export class ChatPanel {
 
                     this._conversationHistory.push({ role: 'user', content: toolResults });
                     this._updateGlobalState();
+
+                    // Display tool results in webview
+                    const toolResultText = toolResults
+                        .map(result => result.content)
+                        .filter(Boolean)
+                        .join('\n');
+                    if (toolResultText) {
+                        this._panel.webview.postMessage({
+                            command: 'addAssistantMessage',
+                            text: toolResultText,
+                            messageId: this._conversationHistory.length - 1
+                        });
+                    }
                 } else {
                     isProcessingTools = false;
                 }

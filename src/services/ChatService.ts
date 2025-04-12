@@ -8,12 +8,6 @@ export class ChatService {
   private anthropic: Anthropic | undefined;
 
   constructor() {
-    // Initialize with a system message as the first user message
-    this._messages.push({
-      role: 'user',
-      content: 'You are Claude, an AI assistant by Anthropic. You are helping with coding tasks in VSCode.'
-    });
-
     this.initializeClient();
   }
 
@@ -30,58 +24,75 @@ export class ChatService {
   }
 
   public async sendMessage(userMessage: string): Promise<Message> {
-    // Add user message to history
     const message: Message = {
       role: 'user',
       content: userMessage
     };
     this._messages.push(message);
 
-    // Make request to Claude API
-    const response = await this._getChatResponse();
+    const response = await this._getChatResponse(userMessage);
     this._messages.push(response);
 
     return response;
   }
 
-  private async _getChatResponse(): Promise<Message> {
-    // This would be replaced with actual API call to Claude
-    // For now, just return a mock response
+  private async _getChatResponse(userMessage: string): Promise<Message> {
+    if (!this.anthropic) {
+      throw new Error('Anthropic client not initialized. Please check API key.');
+    }
 
-    // Check if the message involves file search
-    const lastMessage = this._messages[this._messages.length - 1];
-    const lastMessageContent = lastMessage.content;
+    const lowercaseMessage = userMessage.toLowerCase();
 
-    if (typeof lastMessageContent === 'string' && lastMessageContent.toLowerCase().includes('find files')) {
-      // Extract search term (this is a simplistic approach)
-      const searchTerm = this._extractSearchTerm(lastMessageContent);
+    // Handle file search explicitly
+    if (lowercaseMessage.includes('find files') || lowercaseMessage.includes('search files')) {
+      const searchTerm = this._extractSearchTerm(userMessage);
       if (searchTerm) {
         try {
           const files = await searchFiles(searchTerm);
           return {
             role: 'assistant',
-            content: `I found these files matching "${searchTerm}":\n\n${files.join('\n')}`
+            content: files.length > 0
+              ? `Found these files matching "${searchTerm}":\n\n${files.join('\n')}`
+              : `No files found matching "${searchTerm}".`
           };
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : String(error);
           return {
             role: 'assistant',
-            content: `Sorry, I encountered an error while searching for files: ${errorMessage}`
+            content: `Error searching files: ${errorMessage}`
           };
         }
       }
     }
 
-    // Default response if no special handling
-    return {
-      role: 'assistant',
-      content: 'I understand your request. How can I help further with your coding task?'
-    };
+    // For general queries, use Claude's knowledge base
+    try {
+      const response = await this.anthropic.messages.create({
+        model: 'claude-3-5-sonnet-20241022',
+        max_tokens: 4096,
+        messages: [{ role: 'user', content: userMessage }],
+      });
+
+      const content = response.content
+        .map(block => block.type === 'text' ? block.text : '')
+        .filter(Boolean)
+        .join('\n');
+
+      return {
+        role: 'assistant',
+        content
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      return {
+        role: 'assistant',
+        content: `Error processing request: ${errorMessage}`
+      };
+    }
   }
 
   private _extractSearchTerm(message: string): string | null {
-    // Very basic extraction - would be better with NLP
-    const match = message.match(/find files (?:with|containing) (.*)/i);
+    const match = message.match(/(?:find|search)\s+files\s+(?:with|containing|for)\s+(.*?)(?:$|\s+and)/i);
     return match ? match[1].trim() : null;
   }
 
@@ -99,12 +110,29 @@ export class ChatService {
       this.initializeClient();
     }
 
+    const systemPrompt = `
+You are Claude, an AI assistant created by Anthropic, integrated into a VS Code extension. Your role is to:
+1. Answer general knowledge questions and engage in conversational reasoning to the best of your abilities.
+2. Assist with coding tasks by providing explanations, writing code, debugging, or answering programming questions.
+3. Use available tools (e.g., file operations) only when explicitly requested or when a coding task clearly requires file manipulation (e.g., "create a file" or "edit main.ts").
+4. If a request is ambiguous, ask for clarification rather than assuming tool use.
+
+When responding:
+- Provide clear, concise, and accurate answers for general queries.
+- For coding questions, offer detailed explanations or code snippets as needed.
+- If a tool is used, explain the action taken (e.g., "I created a file at src/app.ts").
+- Avoid using tools unless the task explicitly involves file operations.
+
+Current workspace context: You are in a VS Code environment with access to file tools.
+`.trim();
+
     return await this.anthropic!.messages.create({
       messages,
       model: 'claude-3-5-sonnet-20241022',
       max_tokens: 4096,
       stream: true,
       tools,
+      system: systemPrompt
     });
   }
 }
