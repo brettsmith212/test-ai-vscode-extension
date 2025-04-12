@@ -2,10 +2,10 @@ import * as vscode from 'vscode';
 
 export function getWebviewContent(webview: vscode.Webview, extensionUri: vscode.Uri): string {
   const scriptUri = webview.asWebviewUri(
-    vscode.Uri.joinPath(extensionUri, 'media', 'webviews', 'build', 'assets', 'index.js')
+    vscode.Uri.joinPath(extensionUri, 'media', 'build', 'assets', 'index.js')
   );
   const styleUri = webview.asWebviewUri(
-    vscode.Uri.joinPath(extensionUri, 'media', 'webviews', 'build', 'assets', 'index.css')
+    vscode.Uri.joinPath(extensionUri, 'media', 'build', 'assets', 'index.css')
   );
 
   return `<!DOCTYPE html>

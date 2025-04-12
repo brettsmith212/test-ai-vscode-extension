@@ -29,7 +29,7 @@ export class ChatPanel {
             {
                 enableScripts: true,
                 localResourceRoots: [
-                    vscode.Uri.joinPath(_extensionUri, 'media', 'webviews', 'build')
+                    vscode.Uri.joinPath(_extensionUri, 'media', 'build')
                 ]
             }
         );

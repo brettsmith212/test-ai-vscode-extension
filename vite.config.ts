@@ -9,7 +9,7 @@ export default defineConfig({
   plugins: [react()],
   root: 'webviews',
   build: {
-    outDir: 'media/webviews/build',
+    outDir: '../media/build',
     emptyOutDir: true,
     rollupOptions: {
       input: path.resolve(__dirname, 'webviews/index.tsx'),
