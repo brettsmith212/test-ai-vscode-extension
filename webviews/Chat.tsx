@@ -7,6 +7,7 @@ import InputContainer from './components/InputContainer';
 interface Message {
     role: 'user' | 'assistant';
     content: string;
+    messageId?: number;
 }
 
 interface WebviewState {
@@ -42,20 +43,31 @@ const ChatInner: React.FC = () => {
             const message = event.data;
             switch (message.command) {
                 case 'addUserMessage':
-                    setMessages(prev => [...prev, { role: 'user', content: message.text }]);
+                    setMessages(prev => {
+                        // Avoid duplicates by checking messageId
+                        if (message.messageId && prev.some(msg => msg.messageId === message.messageId)) {
+                            return prev;
+                        }
+                        return [...prev, { role: 'user', content: message.text, messageId: message.messageId }];
+                    });
+                    break;
+                case 'addAssistantMessage':
+                    setMessages(prev => {
+                        // Avoid duplicates by checking messageId
+                        if (message.messageId && prev.some(msg => msg.messageId === message.messageId)) {
+                            return prev;
+                        }
+                        return [...prev, { role: 'assistant', content: message.text, messageId: message.messageId }];
+                    });
+                    setIsProcessing(false);
                     break;
                 case 'startAssistantResponse':
-                    setMessageInProgress({ role: 'assistant', content: '' });
+                    setMessageInProgress({ role: 'assistant', content: '', messageId: message.messageId });
                     break;
                 case 'appendAssistantResponse':
-                    setMessageInProgress(prev => prev ? { ...prev, content: prev.content + message.text } : null);
-                    break;
-                case 'completeAssistantResponse':
-                    if (messageInProgress) {
-                        setMessages(prev => [...prev, messageInProgress]);
-                        setMessageInProgress(null);
-                    }
-                    setIsProcessing(false);
+                    setMessageInProgress(prev => prev && prev.messageId === message.messageId 
+                        ? { ...prev, content: prev.content + message.text } 
+                        : prev);
                     break;
                 case 'error':
                     setErrorMessages(prev => [...prev, message.text]);
@@ -75,7 +87,7 @@ const ChatInner: React.FC = () => {
         return () => {
             window.removeEventListener('message', handleMessage);
         };
-    }, [messageInProgress, vscode]);
+    }, [vscode]);
 
     const sendMessage = (text: string) => {
         setIsProcessing(true);

@@ -38,13 +38,13 @@ export class ChatPanel {
                 localResourceRoots: [
                     vscode.Uri.joinPath(_extensionUri, 'media', 'build')
                 ],
-                retainContextWhenHidden: true // Prevent webview from being reset when hidden
+                retainContextWhenHidden: true
             }
         );
 
         this._panel.webview.html = getWebviewContent(this._panel.webview, this._extensionUri);
 
-        // Restore conversation history to webview
+        // Handle messages from webview
         this._panel.webview.onDidReceiveMessage(
             async (message: WebviewMessage) => {
                 switch (message.command) {
@@ -57,7 +57,8 @@ export class ChatPanel {
                         this._startNewThread();
                         break;
                     case 'restoreHistory':
-                        this._conversationHistory.forEach(msg => {
+                        // Send all messages in history to webview
+                        this._conversationHistory.forEach((msg, index) => {
                             let text: string;
                             if (typeof msg.content === 'string') {
                                 text = msg.content;
@@ -69,11 +70,13 @@ export class ChatPanel {
                                         if (block.type === 'tool_result') return block.content;
                                         return '';
                                     })
+                                    .filter(Boolean)
                                     .join('\n');
                             }
                             this._panel.webview.postMessage({
-                                command: msg.role === 'user' ? 'addUserMessage' : 'completeAssistantResponse',
-                                text
+                                command: msg.role === 'user' ? 'addUserMessage' : 'addAssistantMessage',
+                                text,
+                                messageId: index // Unique ID to track messages
                             });
                         });
                         break;
@@ -99,20 +102,20 @@ export class ChatPanel {
             this._conversationHistory.push({ role: 'user', content: text });
             this._updateGlobalState();
 
-            // Post initial user message to UI
+            // Post user message to UI
             this._panel.webview.postMessage({
                 command: 'addUserMessage',
-                text: text
+                text,
+                messageId: this._conversationHistory.length - 1
             });
 
             let isProcessingTools = true;
             while (isProcessingTools) {
-                // Create message stream with tools
                 const stream = await this._chatService.createMessageStream(this._conversationHistory, fileTools);
 
-                // Initialize assistant response container
                 this._panel.webview.postMessage({
-                    command: 'startAssistantResponse'
+                    command: 'startAssistantResponse',
+                    messageId: this._conversationHistory.length
                 });
 
                 let assistantContent: ContentBlock[] = [];
@@ -137,7 +140,8 @@ export class ChatPanel {
                             (currentBlock as Partial<TextBlock>).text += chunk.delta.text;
                             this._panel.webview.postMessage({
                                 command: 'appendAssistantResponse',
-                                text: chunk.delta.text
+                                text: chunk.delta.text,
+                                messageId: this._conversationHistory.length
                             });
                         } else if (currentBlock.type === 'tool_use' && chunk.delta.type === 'input_json_delta') {
                             jsonAccumulator += chunk.delta.partial_json;
@@ -177,13 +181,15 @@ export class ChatPanel {
                         if (block.type === 'tool_use') return `[Tool: ${block.name}]`;
                         return '';
                     })
+                    .filter(Boolean)
                     .join('\n');
+
                 this._panel.webview.postMessage({
-                    command: 'completeAssistantResponse',
-                    text: assistantText
+                    command: 'addAssistantMessage',
+                    text: assistantText,
+                    messageId: this._conversationHistory.length - 1
                 });
 
-                // Check for tool use blocks
                 const toolUseBlocks = assistantContent.filter(block => block.type === 'tool_use') as ToolUseBlock[];
                 if (toolUseBlocks.length > 0) {
                     const toolResults: ToolResultBlock[] = await Promise.all(toolUseBlocks.map(async (block) => {

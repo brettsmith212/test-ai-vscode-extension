@@ -5,6 +5,7 @@ import { Card, CardContent } from '../components/ui/card';
 interface Message {
     role: 'user' | 'assistant';
     content: string;
+    messageId?: number;
 }
 
 interface ChatContainerProps {
@@ -22,7 +23,6 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ messages, messageInProgre
         const scrollArea = scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]');
         if (scrollArea) {
             const { scrollTop, scrollHeight, clientHeight } = scrollArea;
-            // Consider "at bottom" if within 10 pixels to account for minor scroll inaccuracies
             isAtBottomRef.current = scrollHeight - scrollTop - clientHeight < 10;
         }
     };
@@ -42,7 +42,6 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ messages, messageInProgre
         const scrollArea = scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]');
         if (scrollArea) {
             scrollArea.addEventListener('scroll', checkScrollPosition);
-            // Scroll to bottom on initial render
             scrollArea.scrollTop = scrollArea.scrollHeight;
             isAtBottomRef.current = true;
         }
@@ -63,11 +62,11 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ messages, messageInProgre
         <ScrollArea className="flex-1" ref={scrollAreaRef}>
             <div className="flex flex-col gap-4 p-4">
                 {messages.map((msg, index) => (
-                    <Card
-                        key={index}
+                    <Card 
+                        key={msg.messageId ?? index} 
                         className={`${
-                            msg.role === 'user'
-                                ? 'ml-auto bg-[var(--vscode-button-background)] text-[var(--vscode-button-foreground)]'
+                            msg.role === 'user' 
+                                ? 'ml-auto bg-[var(--vscode-button-background)] text-[var(--vscode-button-foreground)]' 
                                 : 'mr-auto bg-[var(--vscode-editorWidget-background)] text-[var(--vscode-editor-foreground)]'
                         } max-w-[80%] border-[var(--vscode-panel-border)]`}
                     >
@@ -77,8 +76,9 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ messages, messageInProgre
                     </Card>
                 ))}
                 {messageInProgress && (
-                    <Card
+                    <Card 
                         className="mr-auto bg-[var(--vscode-editorWidget-background)] text-[var(--vscode-editor-foreground)] max-w-[80%] border-[var(--vscode-panel-border)]"
+                        key={messageInProgress.messageId}
                     >
                         <CardContent className="p-4">
                             <div className="text-sm whitespace-pre-wrap">{messageInProgress.content}</div>
@@ -86,8 +86,8 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ messages, messageInProgre
                     </Card>
                 )}
                 {errorMessages.map((error, index) => (
-                    <Card
-                        key={index}
+                    <Card 
+                        key={`error-${index}`} 
                         className="mr-auto bg-[var(--vscode-inputValidation-errorBackground)] text-[var(--vscode-inputValidation-errorForeground)] max-w-[80%] border-[var(--vscode-inputValidation-errorBorder)]"
                     >
                         <CardContent className="p-4">
