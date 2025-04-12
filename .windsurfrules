@@ -1,0 +1,20 @@
+# Claude Chat (VSCode Extension)
+
+This is a VSCode extension for chatting with Claude-3.5.
+
+It is organized into two main sections
+
+1. src/
+
+The src/ directory contains the main extension code.
+It contains the logic for the extension and connecting to the claude llm model. We will also build out the agentic abilities here.
+
+2. webviews/
+
+The webviews/ directory is used to store the webview code, which is used to display the chat interface in the webview. The code here is written in React typescript.
+
+When making changes to this repository, make as few changes as required to complete the request. Try to minimize installing dependencies to only those required.
+
+The UI should have a minimalistic design based around dark themes.
+Use Shadcn ui components and TailwindCSS for the UI. When installing shadcn ui components put them in the webviews/components/ui/ directory.
+Make buttons and icons modern and easy to use.

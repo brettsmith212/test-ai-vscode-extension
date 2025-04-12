@@ -1,4 +1,6 @@
 import React from 'react';
+import { ScrollArea } from '../components/ui/scroll-area';
+import { Card, CardContent } from '../components/ui/card';
 
 interface Message {
     role: 'user' | 'assistant';
@@ -12,23 +14,31 @@ interface ChatContainerProps {
 }
 
 const ChatContainer: React.FC<ChatContainerProps> = ({ messages, messageInProgress, errorMessages }) => (
-    <div className="flex-1 overflow-y-auto p-4">
-        {messages.map((msg, index) => (
-            <div key={index} className={`message ${msg.role === 'user' ? 'user-message' : 'assistant-message'}`}>
-                {msg.content}
-            </div>
-        ))}
-        {messageInProgress && (
-            <div className="message assistant-message">
-                {messageInProgress.content}
-            </div>
-        )}
-        {errorMessages.map((error, index) => (
-            <div key={index} className="error">
-                {error}
-            </div>
-        ))}
-    </div>
+    <ScrollArea className="flex-1">
+        <div className="flex flex-col gap-4 p-4">
+            {messages.map((msg, index) => (
+                <Card key={index} className={`${msg.role === 'user' ? 'ml-auto bg-primary/10' : 'mr-auto bg-muted'} max-w-[80%]`}>
+                    <CardContent className="p-4">
+                        <div className="text-sm">{msg.content}</div>
+                    </CardContent>
+                </Card>
+            ))}
+            {messageInProgress && (
+                <Card className="mr-auto bg-muted max-w-[80%]">
+                    <CardContent className="p-4">
+                        <div className="text-sm">{messageInProgress.content}</div>
+                    </CardContent>
+                </Card>
+            )}
+            {errorMessages.map((error, index) => (
+                <Card key={index} className="bg-destructive/10 text-destructive max-w-[80%] mx-auto">
+                    <CardContent className="p-4">
+                        <div className="text-sm">{error}</div>
+                    </CardContent>
+                </Card>
+            ))}
+        </div>
+    </ScrollArea>
 );
 
 export default ChatContainer;
