@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Textarea } from '../components/ui/textarea';
 import { Button } from '../components/ui/button';
 import { Send } from 'lucide-react';
@@ -10,16 +10,23 @@ interface InputContainerProps {
 
 const InputContainer: React.FC<InputContainerProps> = ({ onSend, isProcessing }) => {
     const [input, setInput] = useState('');
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+    // Keep focus on textarea when isProcessing changes
+    useEffect(() => {
+        textareaRef.current?.focus();
+    }, [isProcessing]);
 
     const handleSend = () => {
-        if (input.trim() && !isProcessing) {
+        if (input.trim()) {
             onSend(input);
             setInput('');
+            // Focus will be handled by the useEffect
         }
     };
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-        if (e.key === 'Enter' && !e.shiftKey && !isProcessing) {
+        if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             handleSend();
         }
@@ -28,13 +35,13 @@ const InputContainer: React.FC<InputContainerProps> = ({ onSend, isProcessing })
     return (
         <div className="p-4 border-t border-border flex gap-2 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
             <Textarea
+                ref={textareaRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="Type your message..."
                 rows={3}
-                className="flex-1 resize-none"
-                disabled={isProcessing}
+                className="flex-1 resize-none text-foreground placeholder:text-muted-foreground"
             />
             <Button 
                 onClick={handleSend} 

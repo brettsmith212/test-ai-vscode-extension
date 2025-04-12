@@ -65,7 +65,7 @@ const ChatInner: React.FC = () => {
     };
 
     return (
-        <div className="flex flex-col h-screen">
+        <div className="flex flex-col h-screen bg-background">
             <Header onNewThread={startNewThread} />
             <ChatContainer messages={messages} messageInProgress={messageInProgress} errorMessages={errorMessages} />
             <InputContainer onSend={sendMessage} isProcessing={isProcessing} />
@@ -75,7 +75,9 @@ const ChatInner: React.FC = () => {
 
 const Chat: React.FC = () => (
     <VSCodeProvider>
-        <ChatInner />
+        <div className="dark min-h-screen min-w-full">
+            <ChatInner />
+        </div>
     </VSCodeProvider>
 );
 
