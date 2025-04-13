@@ -53,6 +53,9 @@ export class ChatPanel {
                             await this._handleSendMessage(message.text);
                         }
                         break;
+                    case 'cancelMessage':
+                        this._cancelCurrentMessage();
+                        break;
                     case 'newThread':
                         this._startNewThread();
                         break;
@@ -269,6 +272,20 @@ export class ChatPanel {
                 command: 'error',
                 text: enhancedError
             });
+        }
+    }
+
+    private _cancelCurrentMessage() {
+        try {
+            const cancelSuccess = this._chatService.cancelCurrentStream();
+            if (cancelSuccess) {
+                this._panel.webview.postMessage({
+                    command: 'cancelSuccess',
+                    text: 'Request cancelled by user'
+                });
+            }
+        } catch (error) {
+            console.error('Error cancelling message:', error);
         }
     }
 

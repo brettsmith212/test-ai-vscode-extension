@@ -70,6 +70,13 @@ const ChatInner: React.FC = () => {
                     setIsProcessing(false);
                     setMessageInProgress(null);
                     break;
+                case 'cancelSuccess':
+                    setIsProcessing(false);
+                    if (messageInProgress) {
+                        setMessages(prev => [...prev, { ...messageInProgress, content: messageInProgress.content + "\n\n*Request cancelled by user*" }]);
+                        setMessageInProgress(null);
+                    }
+                    break;
                 case 'clearChat':
                     setMessages([]);
                     setMessageInProgress(null);
@@ -91,6 +98,10 @@ const ChatInner: React.FC = () => {
         vscode.postMessage({ command: 'sendMessage', text });
     };
 
+    const cancelMessage = () => {
+        vscode.postMessage({ command: 'cancelMessage' });
+    };
+
     const startNewThread = () => {
         vscode.postMessage({ command: 'newThread' });
     };
@@ -99,7 +110,7 @@ const ChatInner: React.FC = () => {
         <div className="flex flex-col h-screen bg-background">
             <Header onNewThread={startNewThread} />
             <ChatContainer messages={messages} messageInProgress={messageInProgress} errorMessages={errorMessages} />
-            <InputContainer onSend={sendMessage} isProcessing={isProcessing} />
+            <InputContainer onSend={sendMessage} onCancel={cancelMessage} isProcessing={isProcessing} />
         </div>
     );
 };

@@ -6,6 +6,8 @@ import { searchFiles } from '../tools/fileTools';
 export class ChatService {
   private _messages: Message[] = [];
   private anthropic: Anthropic | undefined;
+  private currentStream: any | null = null;
+  private abortController: AbortController | null = null;
 
   constructor() {
     this.initializeClient();
@@ -180,13 +182,30 @@ When responding:
 Current workspace context: You are in a VS Code environment with access to file tools. Files may be in the root or subdirectories. Search recursively when needed, but do not narrate the search process.
 `.trim();
 
-    return await this.anthropic!.messages.create({
+    this.abortController = new AbortController();
+    
+    const stream = await this.anthropic!.messages.create({
       messages,
       model: 'claude-3-5-sonnet-20241022',
       max_tokens: 4096,
       stream: true,
       tools,
       system: systemPrompt
+    }, {
+      signal: this.abortController.signal
     });
+    
+    this.currentStream = stream;
+    return stream;
+  }
+  
+  public cancelCurrentStream() {
+    if (this.abortController) {
+      this.abortController.abort();
+      this.currentStream = null;
+      this.abortController = null;
+      return true;
+    }
+    return false;
   }
 }
