@@ -103,88 +103,102 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ messages, messageInProgre
     };
 
     return (
-        <ScrollArea className="flex-1" ref={scrollAreaRef}>
-            <div className="flex flex-col gap-4 p-4">
-                {messages.map((msg, index) => (
-                    <Card 
-                        key={msg.messageId ?? index} 
-                        className={`${
-                            msg.role === 'user' 
-                                ? 'ml-auto bg-[var(--vscode-button-background)] text-[var(--vscode-button-foreground)]' 
-                                : 'mr-auto bg-[var(--vscode-editorWidget-background)] text-[var(--vscode-editor-foreground)]'
-                        } w-fit max-w-full min-w-0 border-[var(--vscode-panel-border)] break-words`}
-                    >
-                        <CardContent className="p-3">
-                            {msg.role === 'user' ? (
-                                <div className="text-sm whitespace-pre-wrap break-words">{msg.content}</div>
-                            ) : (
-                                <ReactMarkdown
-                                    components={{
-                                        code({ node, className, children, ...props }) {
-                                            const match = /language-(\w+)/.exec(className || '');
-                                            return match ? (
-                                                <CodeBlock className={className}>
-                                                    {children}
-                                                </CodeBlock>
-                                            ) : (
-                                                <code className={className} {...props}>
-                                                    {children}
-                                                </code>
-                                            );
-                                        },
-                                        div: ({ node, ...props }) => <div className="text-sm break-words" {...props} />
-                                    }}
-                                >
-                                    {msg.content}
-                                </ReactMarkdown>
-                            )}
-                        </CardContent>
-                    </Card>
-                ))}
-                {messageInProgress && (
-                    <Card 
-                        className="mr-auto bg-[var(--vscode-editorWidget-background)] text-[var(--vscode-editor-foreground)] w-fit max-w-full min-w-0 border-[var(--vscode-panel-border)] break-words"
-                        key={messageInProgress.messageId}
-                    >
-                        <CardContent className="p-3 flex items-center">
-                            {messageInProgress.content === '' ? (
-                                <Loader2 className="h-5 w-5 animate-spin text-[var(--vscode-editor-foreground)]" />
-                            ) : (
-                                <ReactMarkdown
-                                    components={{
-                                        code({ node, className, children, ...props }) {
-                                            const match = /language-(\w+)/.exec(className || '');
-                                            return match ? (
-                                                <CodeBlock className={className}>
-                                                    {children}
-                                                </CodeBlock>
-                                            ) : (
-                                                <code className={className} {...props}>
-                                                    {children}
-                                                </code>
-                                            );
-                                        },
-                                        div: ({ node, ...props }) => <div className="text-sm break-words" {...props} />
-                                    }}
-                                >
-                                    {messageInProgress.content}
-                                </ReactMarkdown>
-                            )}
-                        </CardContent>
-                    </Card>
-                )}
-                {errorMessages.map((error, index) => (
-                    <Card 
-                        key={`error-${index}`} 
-                        className="mr-auto bg-[var(--vscode-inputValidation-errorBackground)] text-[var(--vscode-inputValidation-errorForeground)] w-fit max-w-full min-w-0 border-[var(--vscode-inputValidation-errorBorder)] break-words"
-                    >
-                        <CardContent className="p-3">
-                            <div className="text-sm break-words">{error}</div>
-                        </CardContent>
-                    </Card>
-                ))}
-            </div>
-        </ScrollArea>
+        <div className="flex flex-col h-full w-full max-w-full overflow-hidden bg-background text-foreground box-sizing-border-box">
+            <ScrollArea className="flex-1 w-full max-w-full overflow-x-hidden overflow-y-auto" ref={scrollAreaRef}>
+                <div className="flex flex-col gap-4 p-4 w-full max-w-full min-w-0 box-sizing-border-box">
+                    {messages.map((msg, index) => (
+                        <div
+                            key={msg.messageId ?? index}
+                            className={`flex w-full ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                        >
+                            <div
+                                className={`w-fit max-w-[80%] min-w-0 border ${
+                                    msg.role === 'user'
+                                        ? 'bg-[var(--vscode-button-background)] text-[var(--vscode-button-foreground)]'
+                                        : 'bg-[var(--vscode-editorWidget-background)] text-[var(--vscode-editor-foreground)]'
+                                } box-sizing-border-box`}
+                            >
+                                <CardContent className="p-3 overflow-hidden box-sizing-border-box">
+                                    {msg.role === 'user' ? (
+                                        <div className="text-sm whitespace-pre-wrap break-all overflow-hidden">{msg.content}</div>
+                                    ) : (
+                                        <ReactMarkdown
+                                            components={{
+                                                code({ node, className, children, ...props }) {
+                                                    const match = /language-(\w+)/.exec(className || '');
+                                                    return match ? (
+                                                        <CodeBlock className={className}>
+                                                            {children}
+                                                        </CodeBlock>
+                                                    ) : (
+                                                        <code className={className} {...props}>
+                                                            {children}
+                                                        </code>
+                                                    );
+                                                },
+                                                div: ({ node, ...props }) => <div className="text-sm break-all overflow-hidden" {...props} />
+                                            }}
+                                        >
+                                            {msg.content}
+                                        </ReactMarkdown>
+                                    )}
+                                </CardContent>
+                            </div>
+                        </div>
+                    ))}
+                    {messageInProgress && (
+                        <div
+                            className={`flex w-full max-w-full justify-${messageInProgress.role === 'user' ? 'end' : 'start'} box-sizing-border-box`}
+                        >
+                            <Card
+                                className={`w-fit max-w-[80%] min-w-0 border-[var(--vscode-panel-border)] ${
+                                    messageInProgress.role === 'user'
+                                        ? 'bg-[var(--vscode-chat-userMessageBackground)] text-[var(--vscode-editor-foreground)]'
+                                        : 'bg-[var(--vscode-chat-assistantMessageBackground)] text-[var(--vscode-editor-foreground)]'
+                                } box-sizing-border-box`}
+                            >
+                                <CardContent className="p-3 overflow-hidden box-sizing-border-box">
+                                    {messageInProgress.role === 'user' ? (
+                                        <div className="text-sm whitespace-pre-wrap break-all overflow-hidden">{messageInProgress.content}</div>
+                                    ) : (
+                                        <ReactMarkdown
+                                            components={{
+                                                code({ node, className, children, ...props }) {
+                                                    const match = /language-(\w+)/.exec(className || '');
+                                                    return match ? (
+                                                        <CodeBlock className={className}>
+                                                            {children}
+                                                        </CodeBlock>
+                                                    ) : (
+                                                        <code className={className} {...props}>
+                                                            {children}
+                                                        </code>
+                                                    );
+                                                },
+                                                div: ({ node, ...props }) => <div className="text-sm break-all overflow-hidden" {...props} />
+                                            }}
+                                        >
+                                            {messageInProgress.content}
+                                        </ReactMarkdown>
+                                    )}
+                                </CardContent>
+                            </Card>
+                        </div>
+                    )}
+                    {errorMessages.map((error, index) => (
+                        <div key={`error-${index}`} className="flex w-full max-w-full justify-start box-sizing-border-box">
+                            <Card
+                                className="w-fit max-w-full min-w-0 border-[var(--vscode-inputValidation-errorBorder)] bg-[var(--vscode-inputValidation-errorBackground)] text-[var(--vscode-inputValidation-errorForeground)] break-words box-sizing-border-box"
+                            >
+                                <CardContent className="p-3 overflow-hidden box-sizing-border-box">
+                                    <div className="text-sm break-all overflow-hidden">{error}</div>
+                                </CardContent>
+                            </Card>
+                        </div>
+                    ))}
+                </div>
+            </ScrollArea>
+        </div>
     );
 };
 
