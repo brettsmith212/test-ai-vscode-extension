@@ -1,53 +1,59 @@
-# test-extension README
+# Claude Chat VSCode Extension
 
-This is the README for your extension "test-extension". After writing up a brief description, we recommend including the following sections.
+A VSCode extension that provides an AI Coding Agent powered by Claude 3.5 Sonnet, enabling intelligent code assistance and chat interactions directly within your editor.
 
 ## Features
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
+- Interactive chat interface with Claude AI
+- Code generation, analysis, and refactoring assistance
+- Context-aware responses based on your workspace
+- Modern, minimalist dark theme UI using Shadcn components
+- Built with React TypeScript for the webview interface
 
-For example if there is an image subfolder under your extension project workspace:
+## Prerequisites
 
-\!\[feature X\]\(images/feature-x.png\)
+- Node.js and npm installed
+- VSCode version 1.60.0 or higher
+- Anthropic API key
 
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
+## Installation
 
-## Requirements
+1. Clone the repository:
+```bash
+git clone https://github.com/brettsmith212/test-ai-vscode-extension.git
+cd test-ai-vscode-extension
+```
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+2. Install dependencies:
+```bash
+npm install
+```
 
-## Extension Settings
+## Development Setup
 
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
+1. Configure launch.json for debugging:
+   - Open the project in VSCode
+   - Press F5 to start debugging
+   - This will open a new VSCode window with the extension loaded
 
-For example:
+2. Run Storybook for UI development:
+```bash
+npm run storybook
+```
+This will start Storybook on http://localhost:6006
 
-This extension contributes the following settings:
+## Project Structure
 
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
+- `src/`: Main extension code
+  - Extension logic
+  - Claude LLM integration
+  - Agent tools and utilities
+  - Test files for functionality verification
 
-## Known Issues
-
-Calling out known issues can help limit users opening duplicate issues against your extension.
-
-## Release Notes
-
-Users appreciate release notes as you update your extension.
-
-### 1.0.0
-
-Initial release of ...
-
-### 1.0.1
-
-Fixed issue #.
-
-### 1.1.0
-
-Added features X, Y, and Z.
-
----
+- `webviews/`: Chat interface code
+  - React TypeScript components
+  - Shadcn UI components in `components/ui/`
+  - Storybook configuration and stories
 
 ## Following extension guidelines
 
@@ -67,5 +73,3 @@ You can author your README using Visual Studio Code. Here are some useful editor
 
 * [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
 * [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
-
-**Enjoy!**
