@@ -29,17 +29,10 @@ const ChatInner: React.FC = () => {
     });
 
     // Persist state whenever messages or errorMessages change
+    // This only persists state within the current VSCode session for tab switching
     useEffect(() => {
         vscode.setState({ messages, errorMessages });
     }, [messages, errorMessages, vscode]);
-
-    // Request history restoration on mount
-    useEffect(() => {
-        // Clear existing messages to prevent duplicates
-        setMessages([]);
-        setErrorMessages([]);
-        vscode.postMessage({ command: 'restoreHistory' });
-    }, [vscode]);
 
     useEffect(() => {
         const handleMessage = (event: MessageEvent) => {

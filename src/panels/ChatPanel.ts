@@ -26,9 +26,8 @@ export class ChatPanel {
         this._context = context;
         this._chatService = new ChatService();
 
-        // Load conversation history from global state
-        const savedHistory = this._context.globalState.get<Message[]>('claudeChatHistory', []);
-        this._conversationHistory = savedHistory;
+        // Initialize with empty conversation history (removed loading from globalState)
+        this._conversationHistory = [];
 
         this._panel = vscode.window.createWebviewPanel(
             ChatPanel.viewType,
@@ -102,7 +101,7 @@ export class ChatPanel {
         try {
             // Add user message to history
             this._conversationHistory.push({ role: 'user', content: text });
-            this._updateGlobalState();
+            // No need to update global state anymore
 
             // Post user message to UI
             this._panel.webview.postMessage({
@@ -175,7 +174,7 @@ export class ChatPanel {
 
                 // Add assistant message to history
                 this._conversationHistory.push({ role: 'assistant', content: assistantContent });
-                this._updateGlobalState();
+                // No need to update global state anymore
 
                 // Only send text content to webview, skip tool use narration
                 const assistantText = assistantContent
@@ -240,7 +239,7 @@ export class ChatPanel {
                     } else {
                         this._conversationHistory.push({ role: 'user', content: toolResults });
                     }
-                    this._updateGlobalState();
+                    // No need to update global state anymore
 
                     // Display only tool results (skip read_file unless requested)
                     const toolResultText = toolResults
@@ -275,14 +274,15 @@ export class ChatPanel {
 
     private _startNewThread() {
         this._conversationHistory = [];
-        this._updateGlobalState();
+        // No need to update global state anymore
         this._panel.webview.postMessage({
             command: 'clearChat'
         });
     }
 
     private _updateGlobalState() {
-        this._context.globalState.update('claudeChatHistory', this._conversationHistory);
+        // Method kept for compatibility but doesn't save to globalState anymore
+        // this._context.globalState.update('claudeChatHistory', this._conversationHistory);
     }
 
     public reveal() {
