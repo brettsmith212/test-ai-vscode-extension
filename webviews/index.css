@@ -59,4 +59,36 @@
   #root {
     @apply min-h-screen min-w-full;
   }
+
+  /* Markdown styles */
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold text-foreground mt-2 mb-1;
+  }
+  h1 {
+    @apply text-2xl;
+  }
+  h2 {
+    @apply text-xl;
+  }
+  h3 {
+    @apply text-lg;
+  }
+  pre {
+    @apply bg-[var(--vscode-textCodeBlock-background)] p-3 rounded-md my-2;
+  }
+  code {
+    @apply bg-[var(--vscode-textCodeBlock-background)] text-[var(--vscode-editor-foreground)] rounded px-1;
+  }
+  .code-block {
+    @apply relative bg-[var(--vscode-textCodeBlock-background)] p-3 rounded-md my-2 border border-[var(--vscode-panel-border)];
+  }
+  .code-block code {
+    @apply bg-transparent px-0 block w-full;
+  }
+  .copy-button-container {
+    @apply absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity;
+  }
+  p {
+    @apply my-1;
+  }
 }

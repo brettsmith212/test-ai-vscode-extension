@@ -1,7 +1,11 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ScrollArea } from '../components/ui/scroll-area';
 import { Card, CardContent } from '../components/ui/card';
-import { Loader2 } from 'lucide-react';
+import { Button } from '../components/ui/button';
+import { Loader2, Copy, Check } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import hljs from 'highlight.js';
+import 'highlight.js/styles/vs2015.css'; // Use a dark theme compatible with VS Code
 
 interface Message {
     role: 'user' | 'assistant';
@@ -59,6 +63,45 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ messages, messageInProgre
         scrollToBottom();
     }, [messages, messageInProgress, errorMessages]);
 
+    // Highlight code blocks after rendering
+    useEffect(() => {
+        document.querySelectorAll('.code-block code').forEach((block) => {
+            hljs.highlightElement(block as HTMLElement);
+        });
+    }, [messages, messageInProgress]);
+
+    // Custom CodeBlock component with copy button
+    const CodeBlock: React.FC<{ className?: string; children: React.ReactNode }> = ({ className, children }) => {
+        const [isCopied, setIsCopied] = useState(false);
+
+        const handleCopy = () => {
+            const text = String(children).trim();
+            navigator.clipboard.writeText(text).then(() => {
+                setIsCopied(true);
+                setTimeout(() => setIsCopied(false), 2000);
+            });
+        };
+
+        return (
+            <div className="code-block group">
+                <code className={className}>
+                    {children}
+                </code>
+                <div className="copy-button-container">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={handleCopy}
+                        className="h-6 w-6 text-[var(--vscode-button-foreground)] hover:bg-[var(--vscode-button-hoverBackground)]"
+                        title="Copy code"
+                    >
+                        {isCopied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                    </Button>
+                </div>
+            </div>
+        );
+    };
+
     return (
         <ScrollArea className="flex-1" ref={scrollAreaRef}>
             <div className="flex flex-col gap-4 p-4">
@@ -69,23 +112,63 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ messages, messageInProgre
                             msg.role === 'user' 
                                 ? 'ml-auto bg-[var(--vscode-button-background)] text-[var(--vscode-button-foreground)]' 
                                 : 'mr-auto bg-[var(--vscode-editorWidget-background)] text-[var(--vscode-editor-foreground)]'
-                        } max-w-[80%] border-[var(--vscode-panel-border)]`}
+                        } w-fit max-w-full min-w-0 border-[var(--vscode-panel-border)] break-words`}
                     >
-                        <CardContent className="p-4">
-                            <div className="text-sm whitespace-pre-wrap">{msg.content}</div>
+                        <CardContent className="p-3">
+                            {msg.role === 'user' ? (
+                                <div className="text-sm whitespace-pre-wrap break-words">{msg.content}</div>
+                            ) : (
+                                <ReactMarkdown
+                                    components={{
+                                        code({ node, className, children, ...props }) {
+                                            const match = /language-(\w+)/.exec(className || '');
+                                            return match ? (
+                                                <CodeBlock className={className}>
+                                                    {children}
+                                                </CodeBlock>
+                                            ) : (
+                                                <code className={className} {...props}>
+                                                    {children}
+                                                </code>
+                                            );
+                                        },
+                                        div: ({ node, ...props }) => <div className="text-sm break-words" {...props} />
+                                    }}
+                                >
+                                    {msg.content}
+                                </ReactMarkdown>
+                            )}
                         </CardContent>
                     </Card>
                 ))}
                 {messageInProgress && (
                     <Card 
-                        className="mr-auto bg-[var(--vscode-editorWidget-background)] text-[var(--vscode-editor-foreground)] max-w-[80%] border-[var(--vscode-panel-border)]"
+                        className="mr-auto bg-[var(--vscode-editorWidget-background)] text-[var(--vscode-editor-foreground)] w-fit max-w-full min-w-0 border-[var(--vscode-panel-border)] break-words"
                         key={messageInProgress.messageId}
                     >
-                        <CardContent className="p-4 flex items-center">
+                        <CardContent className="p-3 flex items-center">
                             {messageInProgress.content === '' ? (
                                 <Loader2 className="h-5 w-5 animate-spin text-[var(--vscode-editor-foreground)]" />
                             ) : (
-                                <div className="text-sm whitespace-pre-wrap">{messageInProgress.content}</div>
+                                <ReactMarkdown
+                                    components={{
+                                        code({ node, className, children, ...props }) {
+                                            const match = /language-(\w+)/.exec(className || '');
+                                            return match ? (
+                                                <CodeBlock className={className}>
+                                                    {children}
+                                                </CodeBlock>
+                                            ) : (
+                                                <code className={className} {...props}>
+                                                    {children}
+                                                </code>
+                                            );
+                                        },
+                                        div: ({ node, ...props }) => <div className="text-sm break-words" {...props} />
+                                    }}
+                                >
+                                    {messageInProgress.content}
+                                </ReactMarkdown>
                             )}
                         </CardContent>
                     </Card>
@@ -93,10 +176,10 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ messages, messageInProgre
                 {errorMessages.map((error, index) => (
                     <Card 
                         key={`error-${index}`} 
-                        className="mr-auto bg-[var(--vscode-inputValidation-errorBackground)] text-[var(--vscode-inputValidation-errorForeground)] max-w-[80%] border-[var(--vscode-inputValidation-errorBorder)]"
+                        className="mr-auto bg-[var(--vscode-inputValidation-errorBackground)] text-[var(--vscode-inputValidation-errorForeground)] w-fit max-w-full min-w-0 border-[var(--vscode-inputValidation-errorBorder)] break-words"
                     >
-                        <CardContent className="p-4">
-                            <div className="text-sm">{error}</div>
+                        <CardContent className="p-3">
+                            <div className="text-sm break-words">{error}</div>
                         </CardContent>
                     </Card>
                 ))}
