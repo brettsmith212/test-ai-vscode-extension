@@ -216,8 +216,7 @@ export async function executeTool(toolName: string, input: any, showContents: bo
           );
           return workspaceFolder ? path.relative(workspaceFolder.uri.fsPath, uri.fsPath) : uri.fsPath;
         });
-        console.log(`search_files: Found ${files.length} files for query "${input.query}"`);
-        return files.length > 0 ? files.join('\n') : 'No matching files found.';
+        return files.join('\n');
       case "list_files":
         const maxResults = input.maxResults || 100;
         console.log(`list_files: Listing up to ${maxResults} files`);
@@ -233,10 +232,8 @@ export async function executeTool(toolName: string, input: any, showContents: bo
           }
           listFiles.push(`${relPath} (${status})`);
         }
-        console.log(`list_files: Found ${listFiles.length} files`);
         const diagnostics = [
           `Workspace root: ${rootPath}`,
-          `Files found: ${listFiles.length}`,
           `Files.exclude: ${JSON.stringify(excludePatterns)}`
         ];
         return listFiles.length > 0 
@@ -257,7 +254,6 @@ export async function executeTool(toolName: string, input: any, showContents: bo
  */
 export async function searchFiles(query: string): Promise<string[]> {
   const pattern = `**/*${query}*`;
-  console.log(`search_files: Searching with pattern: ${pattern}`);
   try {
     const uris = await vscode.workspace.findFiles(pattern, '**/node_modules/**', 100);
     const files = uris.map(uri => {
@@ -266,7 +262,6 @@ export async function searchFiles(query: string): Promise<string[]> {
       );
       return workspaceFolder ? path.relative(workspaceFolder.uri.fsPath, uri.fsPath) : uri.fsPath;
     });
-    console.log(`search_files: Found ${files.length} files for query "${query}"`);
     return files;
   } catch (error) {
     console.error('searchFiles: Error:', error);
