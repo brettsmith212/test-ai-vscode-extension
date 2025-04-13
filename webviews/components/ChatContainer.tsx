@@ -28,7 +28,7 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ messages, messageInProgre
         const scrollArea = scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]');
         if (scrollArea) {
             const { scrollTop, scrollHeight, clientHeight } = scrollArea;
-            isAtBottomRef.current = scrollHeight - scrollTop - clientHeight < 10;
+            isAtBottomRef.current = Math.abs(scrollHeight - scrollTop - clientHeight) < 10;
         }
     };
 
@@ -47,8 +47,12 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ messages, messageInProgre
         const scrollArea = scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]');
         if (scrollArea) {
             scrollArea.addEventListener('scroll', checkScrollPosition);
+            // Initialize to bottom on first load
             scrollArea.scrollTop = scrollArea.scrollHeight;
             isAtBottomRef.current = true;
+            
+            // Check position after content has loaded/rendered
+            setTimeout(checkScrollPosition, 100);
         }
 
         return () => {
@@ -58,9 +62,10 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ messages, messageInProgre
         };
     }, []);
 
-    // Scroll to bottom when messages change, if at bottom
+    // Scroll to bottom when messages change, but only if we were already at the bottom
     useEffect(() => {
-        scrollToBottom();
+        // Give time for content to render before checking if we should scroll
+        setTimeout(scrollToBottom, 10);
     }, [messages, messageInProgress, errorMessages]);
 
     // Highlight code blocks after rendering
