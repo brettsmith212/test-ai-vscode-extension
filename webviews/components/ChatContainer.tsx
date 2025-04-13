@@ -103,24 +103,24 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ messages, messageInProgre
     };
 
     return (
-        <div className="flex flex-col h-full w-full max-w-full overflow-hidden bg-background text-foreground box-sizing-border-box">
-            <ScrollArea className="flex-1 w-full max-w-full overflow-x-hidden overflow-y-auto" ref={scrollAreaRef}>
-                <div className="flex flex-col gap-4 p-4 w-full max-w-full min-w-0 box-sizing-border-box">
+        <div className="flex flex-col h-full overflow-hidden bg-background text-foreground">
+            <ScrollArea className="flex-1 overflow-hidden" ref={scrollAreaRef}>
+                <div className="flex flex-col gap-4 p-4 chat-message-container">
                     {messages.map((msg, index) => (
                         <div
                             key={msg.messageId ?? index}
-                            className={`flex w-full ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                            className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} w-full chat-message-container`}
                         >
                             <div
-                                className={`w-fit max-w-[80%] min-w-0 border ${
+                                className={`rounded-md overflow-hidden border chat-message ${
                                     msg.role === 'user'
                                         ? 'bg-[var(--vscode-button-background)] text-[var(--vscode-button-foreground)]'
                                         : 'bg-[var(--vscode-editorWidget-background)] text-[var(--vscode-editor-foreground)]'
-                                } box-sizing-border-box`}
+                                }`}
                             >
-                                <CardContent className="p-3 overflow-hidden box-sizing-border-box">
+                                <div className="p-3">
                                     {msg.role === 'user' ? (
-                                        <div className="text-sm whitespace-pre-wrap break-all overflow-hidden">{msg.content}</div>
+                                        <div className="text-sm whitespace-pre-wrap overflow-wrap-anywhere">{msg.content}</div>
                                     ) : (
                                         <ReactMarkdown
                                             components={{
@@ -136,30 +136,31 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ messages, messageInProgre
                                                         </code>
                                                     );
                                                 },
-                                                div: ({ node, ...props }) => <div className="text-sm break-all overflow-hidden" {...props} />
+                                                div: ({ node, ...props }) => <div className="text-sm overflow-wrap-anywhere" {...props} />,
+                                                p: ({ node, ...props }) => <p className="overflow-wrap-anywhere" {...props} />
                                             }}
                                         >
                                             {msg.content}
                                         </ReactMarkdown>
                                     )}
-                                </CardContent>
+                                </div>
                             </div>
                         </div>
                     ))}
                     {messageInProgress && (
                         <div
-                            className={`flex w-full max-w-full justify-${messageInProgress.role === 'user' ? 'end' : 'start'} box-sizing-border-box`}
+                            className={`flex ${messageInProgress.role === 'user' ? 'justify-end' : 'justify-start'} w-full chat-message-container`}
                         >
-                            <Card
-                                className={`w-fit max-w-[80%] min-w-0 border-[var(--vscode-panel-border)] ${
+                            <div
+                                className={`rounded-md overflow-hidden border chat-message ${
                                     messageInProgress.role === 'user'
                                         ? 'bg-[var(--vscode-chat-userMessageBackground)] text-[var(--vscode-editor-foreground)]'
                                         : 'bg-[var(--vscode-chat-assistantMessageBackground)] text-[var(--vscode-editor-foreground)]'
-                                } box-sizing-border-box`}
+                                }`}
                             >
-                                <CardContent className="p-3 overflow-hidden box-sizing-border-box">
+                                <div className="p-3">
                                     {messageInProgress.role === 'user' ? (
-                                        <div className="text-sm whitespace-pre-wrap break-all overflow-hidden">{messageInProgress.content}</div>
+                                        <div className="text-sm whitespace-pre-wrap overflow-wrap-anywhere">{messageInProgress.content}</div>
                                     ) : (
                                         <ReactMarkdown
                                             components={{
@@ -175,25 +176,26 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ messages, messageInProgre
                                                         </code>
                                                     );
                                                 },
-                                                div: ({ node, ...props }) => <div className="text-sm break-all overflow-hidden" {...props} />
+                                                div: ({ node, ...props }) => <div className="text-sm overflow-wrap-anywhere" {...props} />,
+                                                p: ({ node, ...props }) => <p className="overflow-wrap-anywhere" {...props} />
                                             }}
                                         >
                                             {messageInProgress.content}
                                         </ReactMarkdown>
                                     )}
-                                </CardContent>
-                            </Card>
+                                </div>
+                            </div>
                         </div>
                     )}
                     {errorMessages.map((error, index) => (
-                        <div key={`error-${index}`} className="flex w-full max-w-full justify-start box-sizing-border-box">
-                            <Card
-                                className="w-fit max-w-full min-w-0 border-[var(--vscode-inputValidation-errorBorder)] bg-[var(--vscode-inputValidation-errorBackground)] text-[var(--vscode-inputValidation-errorForeground)] break-words box-sizing-border-box"
+                        <div key={`error-${index}`} className="flex justify-start w-full chat-message-container">
+                            <div
+                                className="rounded-md overflow-hidden chat-message border-[var(--vscode-inputValidation-errorBorder)] bg-[var(--vscode-inputValidation-errorBackground)] text-[var(--vscode-inputValidation-errorForeground)]"
                             >
-                                <CardContent className="p-3 overflow-hidden box-sizing-border-box">
-                                    <div className="text-sm break-all overflow-hidden">{error}</div>
-                                </CardContent>
-                            </Card>
+                                <div className="p-3">
+                                    <div className="text-sm overflow-wrap-anywhere">{error}</div>
+                                </div>
+                            </div>
                         </div>
                     ))}
                 </div>
