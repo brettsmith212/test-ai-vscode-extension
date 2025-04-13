@@ -104,45 +104,44 @@
 
 /* Fix for chat container layout issues */
 .chat-message-container {
-  width: 100% !important;
-  max-width: 100% !important;
-  overflow-x: hidden !important;
-  box-sizing: border-box !important;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  box-sizing: border-box;
 }
 
 .chat-message {
-  max-width: 70% !important;
-  width: auto !important;
-  word-wrap: break-word !important;
-  overflow-wrap: anywhere !important;
-  overflow: hidden !important;
-  box-sizing: border-box !important;
+  width: 100%;
+  word-wrap: break-word;
+  overflow-wrap: anywhere;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 /* Fix markdown content */
 .chat-message * {
-  max-width: 100% !important;
-  overflow-x: hidden !important;
-  word-break: break-word !important;
-  overflow-wrap: anywhere !important;
-  box-sizing: border-box !important;
+  max-width: 100%;
+  overflow-x: hidden;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  box-sizing: border-box;
 }
 
 /* Ensure code blocks don't expand beyond container */
 .chat-message pre,
 .chat-message code,
 .chat-message .code-block {
-  max-width: 100% !important;
-  overflow-x: auto !important;
-  white-space: pre-wrap !important;
-  word-break: break-word !important;
-  box-sizing: border-box !important;
+  max-width: 100%;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  box-sizing: border-box;
 }
 
 /* Fix for ReactMarkdown */
 .chat-message p {
-  max-width: 100% !important;
-  overflow-wrap: anywhere !important;
-  word-break: break-word !important;
-  overflow-x: hidden !important;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  overflow-x: hidden;
 }

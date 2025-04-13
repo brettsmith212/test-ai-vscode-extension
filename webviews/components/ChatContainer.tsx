@@ -109,10 +109,10 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ messages, messageInProgre
                     {messages.map((msg, index) => (
                         <div
                             key={msg.messageId ?? index}
-                            className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} w-full chat-message-container`}
+                            className="w-full chat-message-container"
                         >
                             <div
-                                className={`rounded-md overflow-hidden border chat-message ${
+                                className={`rounded-md overflow-hidden border chat-message w-full ${
                                     msg.role === 'user'
                                         ? 'bg-[var(--vscode-button-background)] text-[var(--vscode-button-foreground)]'
                                         : 'bg-[var(--vscode-editorWidget-background)] text-[var(--vscode-editor-foreground)]'
@@ -149,10 +149,10 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ messages, messageInProgre
                     ))}
                     {messageInProgress && (
                         <div
-                            className={`flex ${messageInProgress.role === 'user' ? 'justify-end' : 'justify-start'} w-full chat-message-container`}
+                            className="w-full chat-message-container"
                         >
                             <div
-                                className={`rounded-md overflow-hidden border chat-message ${
+                                className={`rounded-md overflow-hidden border chat-message w-full ${
                                     messageInProgress.role === 'user'
                                         ? 'bg-[var(--vscode-chat-userMessageBackground)] text-[var(--vscode-editor-foreground)]'
                                         : 'bg-[var(--vscode-chat-assistantMessageBackground)] text-[var(--vscode-editor-foreground)]'
@@ -188,9 +188,9 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ messages, messageInProgre
                         </div>
                     )}
                     {errorMessages.map((error, index) => (
-                        <div key={`error-${index}`} className="flex justify-start w-full chat-message-container">
+                        <div key={`error-${index}`} className="w-full chat-message-container">
                             <div
-                                className="rounded-md overflow-hidden chat-message border-[var(--vscode-inputValidation-errorBorder)] bg-[var(--vscode-inputValidation-errorBackground)] text-[var(--vscode-inputValidation-errorForeground)]"
+                                className="rounded-md overflow-hidden chat-message w-full border-[var(--vscode-inputValidation-errorBorder)] bg-[var(--vscode-inputValidation-errorBackground)] text-[var(--vscode-inputValidation-errorForeground)]"
                             >
                                 <div className="p-3">
                                     <div className="text-sm overflow-wrap-anywhere">{error}</div>
