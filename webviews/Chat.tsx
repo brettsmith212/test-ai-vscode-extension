@@ -3,6 +3,8 @@ import { VSCodeProvider, useVSCode } from './VSCodeContext';
 import Header from './components/Header';
 import ChatContainer from './components/ChatContainer';
 import InputContainer from './components/InputContainer';
+import { Toaster } from './components/ui/toaster';
+import { useToast } from './hooks/use-toast';
 
 interface Message {
     role: 'user' | 'assistant';
@@ -17,6 +19,7 @@ interface WebviewState {
 
 const ChatInner: React.FC = () => {
     const vscode = useVSCode();
+    const { toast } = useToast();
     const [messages, setMessages] = useState<Message[]>(() => {
         const savedState = vscode.getState() as WebviewState | undefined;
         return savedState?.messages || [];
@@ -66,16 +69,24 @@ const ChatInner: React.FC = () => {
                         : prev);
                     break;
                 case 'error':
-                    setErrorMessages(prev => [...prev, message.text]);
+                    toast({
+                        variant: "destructive",
+                        title: "Error",
+                        description: message.text,
+                        duration: 3000,
+                    });
                     setIsProcessing(false);
                     setMessageInProgress(null);
                     break;
                 case 'cancelSuccess':
                     setIsProcessing(false);
-                    if (messageInProgress) {
-                        setMessages(prev => [...prev, { ...messageInProgress, content: messageInProgress.content + "\n\n*Request cancelled by user*" }]);
-                        setMessageInProgress(null);
-                    }
+                    setMessageInProgress(null);
+                    toast({
+                        variant: "destructive",
+                        title: "Request Aborted",
+                        description: "",
+                        duration: 2000,
+                    });
                     break;
                 case 'clearChat':
                     setMessages([]);
@@ -91,7 +102,7 @@ const ChatInner: React.FC = () => {
         return () => {
             window.removeEventListener('message', handleMessage);
         };
-    }, [vscode]);
+    }, [vscode, toast]);
 
     const sendMessage = (text: string) => {
         setIsProcessing(true);
@@ -119,6 +130,7 @@ const Chat: React.FC = () => (
     <VSCodeProvider>
         <div className="dark min-h-screen min-w-full">
             <ChatInner />
+            <Toaster />
         </div>
     </VSCodeProvider>
 );

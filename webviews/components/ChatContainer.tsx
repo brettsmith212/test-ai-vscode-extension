@@ -16,7 +16,7 @@ interface Message {
 interface ChatContainerProps {
     messages: Message[];
     messageInProgress: Message | null;
-    errorMessages: string[];
+    errorMessages: string[]; // Keeping for backward compatibility but no longer using
 }
 
 const ChatContainer: React.FC<ChatContainerProps> = ({ messages, messageInProgress, errorMessages }) => {
@@ -66,7 +66,7 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ messages, messageInProgre
     useEffect(() => {
         // Give time for content to render before checking if we should scroll
         setTimeout(scrollToBottom, 10);
-    }, [messages, messageInProgress, errorMessages]);
+    }, [messages, messageInProgress]);
 
     // Highlight code blocks after rendering
     useEffect(() => {
@@ -192,17 +192,6 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ messages, messageInProgre
                             </div>
                         </div>
                     )}
-                    {errorMessages.map((error, index) => (
-                        <div key={`error-${index}`} className="w-full chat-message-container">
-                            <div
-                                className="rounded-md overflow-hidden chat-message w-full border-[var(--vscode-inputValidation-errorBorder)] bg-[var(--vscode-inputValidation-errorBackground)] text-[var(--vscode-inputValidation-errorForeground)]"
-                            >
-                                <div className="p-3">
-                                    <div className="text-sm overflow-wrap-anywhere">{error}</div>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
                 </div>
             </ScrollArea>
         </div>

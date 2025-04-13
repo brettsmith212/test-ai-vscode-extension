@@ -115,151 +115,164 @@ export class ChatPanel {
 
             let isProcessingTools = true;
             while (isProcessingTools) {
-                const stream = await this._chatService.createMessageStream(this._conversationHistory, fileTools);
+                try {
+                    const stream = await this._chatService.createMessageStream(this._conversationHistory, fileTools);
 
-                this._panel.webview.postMessage({
-                    command: 'startAssistantResponse',
-                    messageId: this._conversationHistory.length
-                });
+                    this._panel.webview.postMessage({
+                        command: 'startAssistantResponse',
+                        messageId: this._conversationHistory.length
+                    });
 
-                let assistantContent: ContentBlock[] = [];
-                let currentBlock: Partial<TextBlock | ToolUseBlock> | null = null;
-                let jsonAccumulator: string = '';
-                let fileContents: { [toolUseId: string]: string } = {};
+                    let assistantContent: ContentBlock[] = [];
+                    let currentBlock: Partial<TextBlock | ToolUseBlock> | null = null;
+                    let jsonAccumulator: string = '';
+                    let fileContents: { [toolUseId: string]: string } = {};
 
-                for await (const chunk of stream) {
-                    if (chunk.type === 'content_block_start') {
-                        if (chunk.content_block.type === 'text' || chunk.content_block.type === 'tool_use') {
-                            currentBlock = { type: chunk.content_block.type };
+                    for await (const chunk of stream) {
+                        if (chunk.type === 'content_block_start') {
+                            if (chunk.content_block.type === 'text' || chunk.content_block.type === 'tool_use') {
+                                currentBlock = { type: chunk.content_block.type };
 
-                            if (chunk.content_block.type === 'text') {
-                                (currentBlock as Partial<TextBlock>).text = '';
-                            } else if (chunk.content_block.type === 'tool_use') {
-                                (currentBlock as Partial<ToolUseBlock>).id = chunk.content_block.id;
-                                (currentBlock as Partial<ToolUseBlock>).name = chunk.content_block.name;
+                                if (chunk.content_block.type === 'text') {
+                                    (currentBlock as Partial<TextBlock>).text = '';
+                                } else if (chunk.content_block.type === 'tool_use') {
+                                    (currentBlock as Partial<ToolUseBlock>).id = chunk.content_block.id;
+                                    (currentBlock as Partial<ToolUseBlock>).name = chunk.content_block.name;
+                                    jsonAccumulator = '';
+                                }
+                            }
+                        } else if (chunk.type === 'content_block_delta' && currentBlock !== null) {
+                            if (currentBlock.type === 'text' && chunk.delta.type === 'text_delta') {
+                                (currentBlock as Partial<TextBlock>).text += chunk.delta.text;
+                                this._panel.webview.postMessage({
+                                    command: 'appendAssistantResponse',
+                                    text: chunk.delta.text,
+                                    messageId: this._conversationHistory.length
+                                });
+                            } else if (currentBlock.type === 'tool_use' && chunk.delta.type === 'input_json_delta') {
+                                jsonAccumulator += chunk.delta.partial_json;
+                            }
+                        } else if (chunk.type === 'content_block_stop') {
+                            if (currentBlock !== null) {
+                                if (currentBlock.type === 'text') {
+                                    assistantContent.push(currentBlock as TextBlock);
+                                } else if (currentBlock.type === 'tool_use') {
+                                    try {
+                                        (currentBlock as Partial<ToolUseBlock>).input = jsonAccumulator ? JSON.parse(jsonAccumulator) : {};
+                                        assistantContent.push(currentBlock as ToolUseBlock);
+                                    } catch (error) {
+                                        const errorMessage = error instanceof Error ? error.message : String(error);
+                                        assistantContent.push({
+                                            type: 'text',
+                                            text: `Error parsing tool input: ${errorMessage}`
+                                        });
+                                    }
+                                }
+                                currentBlock = null;
                                 jsonAccumulator = '';
                             }
+                        } else if (chunk.type === 'message_stop') {
+                            break;
                         }
-                    } else if (chunk.type === 'content_block_delta' && currentBlock !== null) {
-                        if (currentBlock.type === 'text' && chunk.delta.type === 'text_delta') {
-                            (currentBlock as Partial<TextBlock>).text += chunk.delta.text;
-                            this._panel.webview.postMessage({
-                                command: 'appendAssistantResponse',
-                                text: chunk.delta.text,
-                                messageId: this._conversationHistory.length
-                            });
-                        } else if (currentBlock.type === 'tool_use' && chunk.delta.type === 'input_json_delta') {
-                            jsonAccumulator += chunk.delta.partial_json;
-                        }
-                    } else if (chunk.type === 'content_block_stop') {
-                        if (currentBlock !== null) {
-                            if (currentBlock.type === 'text') {
-                                assistantContent.push(currentBlock as TextBlock);
-                            } else if (currentBlock.type === 'tool_use') {
-                                try {
-                                    (currentBlock as Partial<ToolUseBlock>).input = jsonAccumulator ? JSON.parse(jsonAccumulator) : {};
-                                    assistantContent.push(currentBlock as ToolUseBlock);
-                                } catch (error) {
-                                    const errorMessage = error instanceof Error ? error.message : String(error);
-                                    assistantContent.push({
-                                        type: 'text',
-                                        text: `Error parsing tool input: ${errorMessage}`
-                                    });
-                                }
-                            }
-                            currentBlock = null;
-                            jsonAccumulator = '';
-                        }
-                    } else if (chunk.type === 'message_stop') {
-                        break;
                     }
-                }
 
-                // Add assistant message to history
-                this._conversationHistory.push({ role: 'assistant', content: assistantContent });
-                // No need to update global state anymore
-
-                // Only send text content to webview, skip tool use narration
-                const assistantText = assistantContent
-                    .filter(block => block.type === 'text')
-                    .map(block => (block as TextBlock).text)
-                    .filter(Boolean)
-                    .join('\n');
-
-                if (assistantText) {
-                    this._panel.webview.postMessage({
-                        command: 'addAssistantMessage',
-                        text: assistantText,
-                        messageId: this._conversationHistory.length - 1
-                    });
-                }
-
-                const toolUseBlocks = assistantContent.filter(block => block.type === 'tool_use') as ToolUseBlock[];
-                if (toolUseBlocks.length > 0) {
-                    const toolResults: ToolResultBlock[] = await Promise.all(toolUseBlocks.map(async (block) => {
-                        try {
-                            const showContents = block.name === 'read_file' && text.toLowerCase().includes('show me the contents');
-                            const result = await executeTool(block.name, block.input, showContents);
-                            console.log(`handleSendMessage: Tool ${block.name} result for tool_use_id ${block.id}: ${result}`);
-                            // Store file content for read_file if not showing contents
-                            if (block.name === 'read_file' && !showContents) {
-                                try {
-                                    const uri = vscode.Uri.file(path.join(
-                                        vscode.workspace.workspaceFolders![0].uri.fsPath,
-                                        block.input.path
-                                    ));
-                                    const fileData = await vscode.workspace.fs.readFile(uri);
-                                    fileContents[block.id] = new TextDecoder().decode(fileData);
-                                    console.log(`handleSendMessage: Stored content for ${block.input.path}, length: ${fileContents[block.id].length}`);
-                                } catch (readError) {
-                                    console.error(`handleSendMessage: Failed to store content for ${block.input.path}:`, readError);
-                                }
-                            }
-                            return { type: 'tool_result', tool_use_id: block.id, content: result };
-                        } catch (error) {
-                            const errorMessage = error instanceof Error ? error.message : String(error);
-                            console.log(`handleSendMessage: Tool ${block.name} error for tool_use_id ${block.id}: ${errorMessage}`);
-                            return { type: 'tool_result', tool_use_id: block.id, content: `Error: ${errorMessage}` };
-                        }
-                    }));
-
-                    // Append file contents to history for Claude to analyze
-                    if (Object.keys(fileContents).length > 0) {
-                        const contentBlocks: ContentBlock[] = toolResults.map(result => ({
-                            type: 'tool_result',
-                            tool_use_id: result.tool_use_id,
-                            content: result.content
-                        }));
-                        for (const result of toolResults) {
-                            if (fileContents[result.tool_use_id]) {
-                                contentBlocks.push({
-                                    type: 'text',
-                                    text: `Internal file content for analysis (not displayed): ${fileContents[result.tool_use_id]}`
-                                });
-                            }
-                        }
-                        this._conversationHistory.push({ role: 'user', content: contentBlocks });
-                    } else {
-                        this._conversationHistory.push({ role: 'user', content: toolResults });
+                    // Only add the assistant message to history if it has content
+                    if (assistantContent.length > 0) {
+                        this._conversationHistory.push({ role: 'assistant', content: assistantContent });
                     }
-                    // No need to update global state anymore
 
-                    // Display only tool results (skip read_file unless requested)
-                    const toolResultText = toolResults
-                        .filter(result => result.content && (result.content !== 'Read successful' || result.content.startsWith('Error')))
-                        .map(result => result.content)
+                    // Only send text content to webview, skip tool use narration
+                    const assistantText = assistantContent
+                        .filter(block => block.type === 'text')
+                        .map(block => (block as TextBlock).text)
                         .filter(Boolean)
                         .join('\n');
 
-                    if (toolResultText) {
+                    if (assistantText) {
                         this._panel.webview.postMessage({
                             command: 'addAssistantMessage',
-                            text: toolResultText,
+                            text: assistantText,
                             messageId: this._conversationHistory.length - 1
                         });
                     }
-                } else {
-                    isProcessingTools = false;
+
+                    const toolUseBlocks = assistantContent.filter(block => block.type === 'tool_use') as ToolUseBlock[];
+                    if (toolUseBlocks.length > 0) {
+                        const toolResults: ToolResultBlock[] = await Promise.all(toolUseBlocks.map(async (block) => {
+                            try {
+                                const showContents = block.name === 'read_file' && text.toLowerCase().includes('show me the contents');
+                                const result = await executeTool(block.name, block.input, showContents);
+                                console.log(`handleSendMessage: Tool ${block.name} result for tool_use_id ${block.id}: ${result}`);
+                                // Store file content for read_file if not showing contents
+                                if (block.name === 'read_file' && !showContents) {
+                                    try {
+                                        const uri = vscode.Uri.file(path.join(
+                                            vscode.workspace.workspaceFolders![0].uri.fsPath,
+                                            block.input.path
+                                        ));
+                                        const fileData = await vscode.workspace.fs.readFile(uri);
+                                        fileContents[block.id] = new TextDecoder().decode(fileData);
+                                        console.log(`handleSendMessage: Stored content for ${block.input.path}, length: ${fileContents[block.id].length}`);
+                                    } catch (readError) {
+                                        console.error(`handleSendMessage: Failed to store content for ${block.input.path}:`, readError);
+                                    }
+                                }
+                                return { type: 'tool_result', tool_use_id: block.id, content: result };
+                            } catch (error) {
+                                const errorMessage = error instanceof Error ? error.message : String(error);
+                                console.log(`handleSendMessage: Tool ${block.name} error for tool_use_id ${block.id}: ${errorMessage}`);
+                                return { type: 'tool_result', tool_use_id: block.id, content: `Error: ${errorMessage}` };
+                            }
+                        }));
+
+                        // Append file contents to history for Claude to analyze
+                        if (Object.keys(fileContents).length > 0) {
+                            const contentBlocks: ContentBlock[] = toolResults.map(result => ({
+                                type: 'tool_result',
+                                tool_use_id: result.tool_use_id,
+                                content: result.content
+                            }));
+                            for (const result of toolResults) {
+                                if (fileContents[result.tool_use_id]) {
+                                    contentBlocks.push({
+                                        type: 'text',
+                                        text: `Internal file content for analysis (not displayed): ${fileContents[result.tool_use_id]}`
+                                    });
+                                }
+                            }
+                            this._conversationHistory.push({ role: 'user', content: contentBlocks });
+                        } else {
+                            this._conversationHistory.push({ role: 'user', content: toolResults });
+                        }
+                        // No need to update global state anymore
+
+                        // Display only tool results (skip read_file unless requested)
+                        const toolResultText = toolResults
+                            .filter(result => result.content && (result.content !== 'Read successful' || result.content.startsWith('Error')))
+                            .map(result => result.content)
+                            .filter(Boolean)
+                            .join('\n');
+
+                        if (toolResultText) {
+                            this._panel.webview.postMessage({
+                                command: 'addAssistantMessage',
+                                text: toolResultText,
+                                messageId: this._conversationHistory.length - 1
+                            });
+                        }
+                    } else {
+                        isProcessingTools = false;
+                    }
+                } catch (error) {
+                    console.error('handleSendMessage: Error:', error);
+                    const errorMessage = error instanceof Error ? error.message : 'An error occurred while processing your request.';
+                    const enhancedError = errorMessage.includes('cannot read') || errorMessage.includes('not found')
+                        ? `${errorMessage}\nTry running VS Code as administrator, checking file permissions, or ensuring the workspace folder includes the file. Use 'list files' to verify file accessibility.`
+                        : errorMessage;
+                    this._panel.webview.postMessage({
+                        command: 'error',
+                        text: enhancedError
+                    });
                 }
             }
         } catch (error) {
@@ -279,6 +292,18 @@ export class ChatPanel {
         try {
             const cancelSuccess = this._chatService.cancelCurrentStream();
             if (cancelSuccess) {
+                // Check if the most recent message is an assistant message with empty content
+                // This would happen if cancellation occurs before any content is generated
+                const lastMessage = this._conversationHistory[this._conversationHistory.length - 1];
+                if (lastMessage && lastMessage.role === 'assistant') {
+                    // If the assistant message has no content (empty array or empty string), remove it
+                    if (Array.isArray(lastMessage.content) && lastMessage.content.length === 0) {
+                        this._conversationHistory.pop();
+                    } else if (typeof lastMessage.content === 'string' && lastMessage.content.trim() === '') {
+                        this._conversationHistory.pop();
+                    }
+                }
+                
                 this._panel.webview.postMessage({
                     command: 'cancelSuccess',
                     text: 'Request cancelled by user'
