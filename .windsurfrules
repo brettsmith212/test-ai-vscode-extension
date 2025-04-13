@@ -2,14 +2,17 @@
 
 ## Overview
 
-This is a VSCode extension for chatting with Claude-3.5.
+This is a VSCode extension that provides an AI Coding Agent that utilizes Claude 3.5 Sonnet.
 
 It is organized into two main sections
 
 1. src/
 
 The src/ directory contains the main extension code.
-It contains the logic for the extension and connecting to the claude llm model. We will also build out the agentic abilities here.
+It contains the logic for the extension and connecting to the claude llm model.
+This also contains the Agent code that has access to tools to assist Claude with coding tasks.
+
+When needed, write tests for the code in the src/ directory to test out how effectively Claude is using the tools available.
 
 2. webviews/
 
