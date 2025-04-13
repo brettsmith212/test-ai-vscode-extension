@@ -113,8 +113,11 @@ export class ChatPanel {
                 messageId: this._conversationHistory.length - 1
             });
 
+            let iterationCount = 0;
+            const maxIterations = 10;
             let isProcessingTools = true;
-            while (isProcessingTools) {
+            while (isProcessingTools && iterationCount < maxIterations) {
+                iterationCount++;
                 try {
                     const stream = await this._chatService.createMessageStream(this._conversationHistory, fileTools);
 
@@ -198,11 +201,13 @@ export class ChatPanel {
 
                     const toolUseBlocks = assistantContent.filter(block => block.type === 'tool_use') as ToolUseBlock[];
                     if (toolUseBlocks.length > 0) {
+                        console.log(`Processing tool uses:`, toolUseBlocks.map(b => b.name));
                         const toolResults: ToolResultBlock[] = await Promise.all(toolUseBlocks.map(async (block) => {
                             try {
+                                console.log(`Executing tool: ${block.name} with input:`, block.input);
                                 const showContents = block.name === 'read_file' && text.toLowerCase().includes('show me the contents');
                                 const result = await executeTool(block.name, block.input, showContents);
-                                console.log(`handleSendMessage: Tool ${block.name} result for tool_use_id ${block.id}: ${result}`);
+                                console.log(`Tool result for ${block.id}:`, result);
                                 // Store file content for read_file if not showing contents
                                 if (block.name === 'read_file' && !showContents) {
                                     try {
@@ -274,6 +279,15 @@ export class ChatPanel {
                         text: enhancedError
                     });
                 }
+            }
+            if (iterationCount >= maxIterations) {
+                const errorMessage = "Maximum tool use iterations reached. Please try rephrasing your request or breaking it into smaller tasks.";
+                this._conversationHistory.push({ role: 'assistant', content: errorMessage });
+                this._panel.webview.postMessage({
+                    command: 'addAssistantMessage',
+                    text: errorMessage,
+                    messageId: this._conversationHistory.length - 1
+                });
             }
         } catch (error) {
             console.error('handleSendMessage: Error:', error);
