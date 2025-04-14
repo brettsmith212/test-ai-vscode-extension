@@ -3,7 +3,8 @@ import * as path from 'path';
 import { ChatService } from '../services/ChatService';
 import { getWebviewContent } from '../views/webview-content';
 import { Message, ContentBlock, TextBlock, ToolUseBlock, ToolResultBlock, WebviewMessage } from '../types';
-import { fileTools, executeTool } from '../tools/fileTools';
+import { fileTools } from '../tools/fileTools';
+import { terminalTools } from '../tools/terminalTools';
 
 export class ChatPanel {
     public static readonly viewType = 'claudeChat';
@@ -119,7 +120,10 @@ export class ChatPanel {
             while (isProcessingTools && iterationCount < maxIterations) {
                 iterationCount++;
                 try {
-                    const stream = await this._chatService.createMessageStream(this._conversationHistory, fileTools);
+                    const stream = await this._chatService.createMessageStream(
+                        this._conversationHistory, 
+                        [] // Let ChatService combine tools internally
+                    );
 
                     this._panel.webview.postMessage({
                         command: 'startAssistantResponse',
@@ -205,11 +209,13 @@ export class ChatPanel {
                         const toolResults: ToolResultBlock[] = await Promise.all(toolUseBlocks.map(async (block) => {
                             try {
                                 console.log(`Executing tool: ${block.name} with input:`, block.input);
-                                const showContents = block.name === 'read_file' && text.toLowerCase().includes('show me the contents');
-                                const result = await executeTool(block.name, block.input, showContents);
+                                const result = await this._chatService.handleToolCall({
+                                    name: block.name,
+                                    input: block.input
+                                });
                                 console.log(`Tool result for ${block.id}:`, result);
                                 // Store file content for read_file if not showing contents
-                                if (block.name === 'read_file' && !showContents) {
+                                if (block.name === 'read_file' && text.toLowerCase().includes('show me the contents')) {
                                     try {
                                         const uri = vscode.Uri.file(path.join(
                                             vscode.workspace.workspaceFolders![0].uri.fsPath,

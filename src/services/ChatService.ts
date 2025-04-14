@@ -1,7 +1,14 @@
 import * as vscode from 'vscode';
 import Anthropic from '@anthropic-ai/sdk';
 import { Message, ContentBlock } from '../types';
-import { searchFiles } from '../tools/fileTools';
+import { searchFiles, fileTools } from '../tools/fileTools';
+import { terminalTools, executeTerminalTool } from '../tools/terminalTools';
+
+// Define type for tool calls
+interface ToolCall {
+  name: string;
+  input: any;
+}
 
 export class ChatService {
   private _messages: Message[] = [];
@@ -112,6 +119,23 @@ export class ChatService {
       this.initializeClient();
     }
 
+    // Combine all available tools
+    const allTools = [...fileTools, ...terminalTools];
+    
+    // Add any additional tools, ensuring no duplicates by name
+    if (tools && tools.length > 0) {
+      const existingToolNames = new Set(allTools.map(tool => tool.name));
+      
+      for (const tool of tools) {
+        if (!existingToolNames.has(tool.name)) {
+          allTools.push(tool);
+          existingToolNames.add(tool.name);
+        } else {
+          console.warn(`Duplicate tool name found: ${tool.name}. Skipping.`);
+        }
+      }
+    }
+
     const systemPrompt = `
 You are Claude, an AI assistant created by Anthropic, integrated into a VS Code extension. Your role is to:
 
@@ -158,11 +182,19 @@ You are Claude, an AI assistant created by Anthropic, integrated into a VS Code 
     - Ask for clarification directly
     - Do not explain possible interpretations unless asked
 
+11. When using terminal commands:
+    - Use the run_command tool to execute shell commands when needed
+    - Run git commands, build processes, installations, or any terminal operations
+    - Report command execution results concisely
+    - Do not ask for permission to run standard development commands
+
 Examples of good responses:
 - "The \`main.go\` file defines the entry point for a Go application."
 - "File \`config.json\` created successfully."
 - "Error: File \`main.go\` not found. Try 'search files main.go'."
 - "Which file did you mean: \`src/main.go\` or \`cmd/main.go\`?"
+- "Command \`npm install\` executed successfully."
+- "Git status shows 3 modified files."
 
 Examples of responses to avoid:
 - "Let me search for that file..."
@@ -171,6 +203,7 @@ Examples of responses to avoid:
 - "Now I'm going to update the code..."
 - "Let me check"
 - "File has been updated"
+- "Let me run that command for you..."
 
 When responding:
 - Always use proper markdown formatting
@@ -179,7 +212,7 @@ When responding:
 - Be direct and to the point
 - Only provide detailed explanations when explicitly requested
 
-Current workspace context: You are in a VS Code environment with access to file tools. Files may be in the root or subdirectories. Search recursively when needed, but do not narrate the search process.
+Current workspace context: You are in a VS Code environment with access to file tools and terminal commands. Files may be in the root or subdirectories. Search recursively when needed, but do not narrate the search process.
 `.trim();
 
     this.abortController = new AbortController();
@@ -189,7 +222,7 @@ Current workspace context: You are in a VS Code environment with access to file 
       model: 'claude-3-5-sonnet-20241022',
       max_tokens: 4096,
       stream: true,
-      tools,
+      tools: allTools,
       system: systemPrompt
     }, {
       signal: this.abortController.signal
@@ -207,5 +240,28 @@ Current workspace context: You are in a VS Code environment with access to file 
       return true;
     }
     return false;
+  }
+
+  public async handleToolCall(toolCall: ToolCall): Promise<string> {
+    console.log("Tool call:", toolCall);
+    
+    const { name, input } = toolCall;
+    
+    // Handle file tools
+    if (name === "create_file" || name === "update_file" || 
+        name === "delete_file" || name === "read_file" || 
+        name === "search_files" || name === "list_files") {
+      // Import the executeTool function dynamically to avoid circular dependencies
+      const { executeTool } = require('../tools/fileTools');
+      return await executeTool(name, input, true);
+    }
+    
+    // Handle terminal tools
+    if (name === "run_command") {
+      console.log("Executing terminal command:", input);
+      return await executeTerminalTool("run_command", input);
+    }
+    
+    throw new Error(`Unknown tool: ${name}`);
   }
 }
