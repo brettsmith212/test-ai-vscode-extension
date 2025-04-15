@@ -53,16 +53,17 @@ const ChatInner: React.FC = () => {
                         return [...prev, { role: 'user', content: message.text, messageId: message.messageId }];
                     });
                     break;
-                case 'addAssistantMessage':
+                case 'addAssistantMessage': {
+                    setIsProcessing(false);
+                    setMessageInProgress(null);
                     setMessages(prev => {
                         if (message.messageId && prev.some(msg => msg.messageId === message.messageId)) {
                             return prev;
                         }
                         return [...prev, { role: 'assistant', content: message.text, messageId: message.messageId }];
                     });
-                    setIsProcessing(false);
-                    setMessageInProgress(null);
                     break;
+                }
                 case 'startAssistantResponse':
                     setMessageInProgress({ role: 'assistant', content: '', messageId: message.messageId });
                     setIsProcessing(true);
@@ -152,6 +153,7 @@ const ChatInner: React.FC = () => {
                 errorMessages={errorMessages}
                 onApproveCommand={handleApproveCommand}
                 onCancelCommand={handleCancelCommand}
+                isProcessing={isProcessing}
             />
             <InputContainer onSend={sendMessage} onCancel={cancelMessage} isProcessing={isProcessing} />
         </div>

@@ -32,9 +32,10 @@ interface ChatContainerProps {
     errorMessages: string[]; // Keeping for backward compatibility but no longer using
     onApproveCommand?: (commandId: string) => void;
     onCancelCommand?: (commandId: string) => void;
+    isProcessing: boolean; // Add isProcessing prop
 }
 
-const ChatContainer: React.FC<ChatContainerProps> = ({ messages, messageInProgress, errorMessages, onApproveCommand, onCancelCommand }) => {
+const ChatContainer: React.FC<ChatContainerProps> = ({ messages, messageInProgress, errorMessages, onApproveCommand, onCancelCommand, isProcessing }) => {
     const scrollAreaRef = useRef<HTMLDivElement>(null);
     const isAtBottomRef = useRef(true);
 
@@ -213,7 +214,7 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ messages, messageInProgre
                             </div>
                         </div>
                     ))}
-                    {messageInProgress && (
+                    {isProcessing && messageInProgress && (
                         <div
                             className="w-full chat-message-container"
                         >

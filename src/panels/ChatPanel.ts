@@ -129,6 +129,9 @@ export class ChatPanel {
             let iterationCount = 0;
             const maxIterations = 10;
             let isProcessingTools = true;
+            // Generate a new messageId for each user message/assistant response
+            const messageId = this._conversationHistory.length;
+            let hasSentStartAssistantResponse = false;
             while (isProcessingTools && iterationCount < maxIterations) {
                 iterationCount++;
                 try {
@@ -137,10 +140,14 @@ export class ChatPanel {
                         [] // Let ChatService combine tools internally
                     );
 
-                    this._panel.webview.postMessage({
-                        command: 'startAssistantResponse',
-                        messageId: this._conversationHistory.length
-                    });
+                    // Only send startAssistantResponse ONCE per user message
+                    if (!hasSentStartAssistantResponse) {
+                        this._panel.webview.postMessage({
+                            command: 'startAssistantResponse',
+                            messageId
+                        });
+                        hasSentStartAssistantResponse = true;
+                    }
 
                     let assistantContent: ContentBlock[] = [];
                     let currentBlock: Partial<TextBlock | ToolUseBlock> | null = null;
@@ -166,7 +173,7 @@ export class ChatPanel {
                                 this._panel.webview.postMessage({
                                     command: 'appendAssistantResponse',
                                     text: chunk.delta.text,
-                                    messageId: this._conversationHistory.length
+                                    messageId: messageId
                                 });
                             } else if (currentBlock.type === 'tool_use' && chunk.delta.type === 'input_json_delta') {
                                 jsonAccumulator += chunk.delta.partial_json;
@@ -211,7 +218,7 @@ export class ChatPanel {
                         this._panel.webview.postMessage({
                             command: 'addAssistantMessage',
                             text: assistantText,
-                            messageId: this._conversationHistory.length - 1
+                            messageId: messageId
                         });
                     }
 
@@ -300,9 +307,26 @@ export class ChatPanel {
                             this._panel.webview.postMessage({
                                 command: 'addAssistantMessage',
                                 text: toolResultText,
-                                messageId: this._conversationHistory.length - 1
+                                messageId: messageId
                             });
                         }
+                        // If there was no assistant text and only tool results, send a default assistant message to clear the spinner
+                        if (!assistantText && toolResults.length > 0) {
+                            this._panel.webview.postMessage({
+                                command: 'addAssistantMessage',
+                                text: 'Command executed in terminal.',
+                                messageId: messageId
+                            });
+                        }
+                        // Defensive: Always clear spinner at the end of tool processing with the same messageId
+                        // (But do NOT send another startAssistantResponse)
+                        setTimeout(() => {
+                            this._panel.webview.postMessage({
+                                command: 'addAssistantMessage',
+                                text: '',
+                                messageId
+                            });
+                        }, 100);
                     } else {
                         isProcessingTools = false;
                     }
@@ -324,7 +348,7 @@ export class ChatPanel {
                 this._panel.webview.postMessage({
                     command: 'addAssistantMessage',
                     text: errorMessage,
-                    messageId: this._conversationHistory.length - 1
+                    messageId: messageId
                 });
             }
         } catch (error) {
