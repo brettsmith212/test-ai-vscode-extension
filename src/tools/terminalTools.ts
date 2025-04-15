@@ -1,8 +1,5 @@
 import * as vscode from 'vscode';
 import Anthropic from '@anthropic-ai/sdk';
-import * as fs from 'fs';
-import * as path from 'path';
-import * as os from 'os';
 import * as child_process from 'child_process';
 
 export const terminalTools: Anthropic.Tool[] = [
@@ -62,8 +59,8 @@ let lastCommandOutput: string = '';
  * @returns A string indicating the command was executed
  */
 export async function executeTerminalCommand(
-  command: string, 
-  cwd?: string, 
+  command: string,
+  cwd?: string,
   captureOutput: boolean = false
 ): Promise<string> {
   // Get the workspace root path
@@ -93,13 +90,13 @@ export async function executeTerminalCommand(
 
     // Send the command
     terminal.sendText(command, true);
-    
+
     // Clear previous output since we're not capturing this one
     lastCommandOutput = '';
-    
+
     return `Command executed in terminal: ${command}`;
   }
-  
+
   // If we want to capture output, use a different approach with child_process
   try {
     // Execute the command using child_process.exec, which allows us to capture the output
@@ -116,7 +113,7 @@ export async function executeTerminalCommand(
 
     // Store the result
     lastCommandOutput = result;
-    
+
     // Still show the command in the terminal for transparency, but without redirections
     if (!terminal || terminal.exitStatus !== undefined) {
       terminal = vscode.window.createTerminal({
@@ -126,10 +123,10 @@ export async function executeTerminalCommand(
     } else if (cwd) {
       terminal.sendText(`cd "${cwd}"`, true);
     }
-    
+
     terminal.show();
     terminal.sendText(command, true);
-    
+
     return `Command executed: ${command}\n\nOutput has been captured and is available via read_terminal_output.`;
   } catch (error) {
     console.error('Error executing terminal command:', error);
@@ -151,7 +148,7 @@ export async function readTerminalOutput(maxLines?: number): Promise<string> {
     const lines = lastCommandOutput.split('\n');
     return lines.slice(0, maxLines).join('\n');
   }
-  
+
   return lastCommandOutput;
 }
 
@@ -166,8 +163,8 @@ export async function executeTerminalTool(toolName: string, input: any): Promise
 
   if (toolName === "run_command") {
     return await executeTerminalCommand(
-      input.command, 
-      input.cwd, 
+      input.command,
+      input.cwd,
       input.captureOutput === true
     );
   } else if (toolName === "read_terminal_output") {
