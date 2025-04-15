@@ -224,30 +224,37 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ messages, messageInProgre
                                         : 'bg-[var(--vscode-chat-assistantMessageBackground)] text-[var(--vscode-editor-foreground)]'
                                 }`}
                             >
-                                <div className="p-3">
+                                <div className="p-3 flex items-center min-h-[2.5rem]">
                                     {messageInProgress.role === 'user' ? (
                                         <div className="text-sm whitespace-pre-wrap overflow-wrap-anywhere">{messageInProgress.content}</div>
                                     ) : (
-                                        <ReactMarkdown
-                                            components={{
-                                                code({ node, className, children, ...props }) {
-                                                    const match = /language-(\w+)/.exec(className || '');
-                                                    return match ? (
-                                                        <CodeBlock className={className}>
-                                                            {children}
-                                                        </CodeBlock>
-                                                    ) : (
-                                                        <code className={className} {...props}>
-                                                            {children}
-                                                        </code>
-                                                    );
-                                                },
-                                                div: ({ node, ...props }) => <div className="text-sm overflow-wrap-anywhere" {...props} />, 
-                                                p: ({ node, ...props }) => <p className="overflow-wrap-anywhere" {...props} />
-                                            }}
-                                        >
-                                            {messageInProgress.content}
-                                        </ReactMarkdown>
+                                        !messageInProgress.content ? (
+                                            <div className="flex items-center justify-center w-full h-8">
+                                                <Loader2 className="animate-spin h-5 w-5 text-[var(--vscode-editor-foreground)] opacity-80" />
+                                                <span className="ml-2 text-xs text-muted-foreground">Claude is thinking...</span>
+                                            </div>
+                                        ) : (
+                                            <ReactMarkdown
+                                                components={{
+                                                    code({ node, className, children, ...props }) {
+                                                        const match = /language-(\w+)/.exec(className || '');
+                                                        return match ? (
+                                                            <CodeBlock className={className}>
+                                                                {children}
+                                                            </CodeBlock>
+                                                        ) : (
+                                                            <code className={className} {...props}>
+                                                                {children}
+                                                            </code>
+                                                        );
+                                                    },
+                                                    div: ({ node, ...props }) => <div className="text-sm overflow-wrap-anywhere" {...props} />, 
+                                                    p: ({ node, ...props }) => <p className="overflow-wrap-anywhere" {...props} />
+                                                }}
+                                            >
+                                                {messageInProgress.content}
+                                            </ReactMarkdown>
+                                        )
                                     )}
                                 </div>
                             </div>
