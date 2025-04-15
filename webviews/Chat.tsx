@@ -7,9 +7,13 @@ import { Toaster } from './components/ui/toaster';
 import { useToast } from './hooks/use-toast';
 
 interface Message {
-    role: 'user' | 'assistant';
+    role: 'user' | 'assistant' | 'pending-command';
     content: string;
     messageId?: number;
+    commandDetails?: {
+        command: string;
+        commandId: string;
+    };
 }
 
 interface WebviewState {
@@ -68,6 +72,17 @@ const ChatInner: React.FC = () => {
                         ? { ...prev, content: prev.content + message.text } 
                         : prev);
                     break;
+                case 'proposeCommand':
+                    setMessages(prev => [...prev, {
+                        role: 'pending-command',
+                        content: message.text,
+                        commandDetails: {
+                            command: message.commandString,
+                            commandId: message.commandId,
+                        },
+                        messageId: message.messageId,
+                    }]);
+                    break;
                 case 'error':
                     toast({
                         variant: "destructive",
@@ -81,6 +96,7 @@ const ChatInner: React.FC = () => {
                 case 'cancelSuccess':
                     setIsProcessing(false);
                     setMessageInProgress(null);
+                    if (message.commandId) removePendingCommand(message.commandId);
                     break;
                 case 'clearChat':
                     setMessages([]);
@@ -98,6 +114,22 @@ const ChatInner: React.FC = () => {
         };
     }, [vscode, toast]);
 
+    // Remove a pending-command message by commandId
+    const removePendingCommand = (commandId: string) => {
+        setMessages(prev => prev.filter(
+            msg => !(msg.role === 'pending-command' && msg.commandDetails?.commandId === commandId)
+        ));
+    };
+
+    const handleApproveCommand = (commandId: string) => {
+        vscode.postMessage({ command: 'approveCommand', commandId });
+        removePendingCommand(commandId); // Optimistically remove
+    };
+    const handleCancelCommand = (commandId: string) => {
+        vscode.postMessage({ command: 'cancelMessage', commandId });
+        removePendingCommand(commandId); // Optimistically remove
+    };
+
     const sendMessage = (text: string) => {
         setIsProcessing(true);
         vscode.postMessage({ command: 'sendMessage', text });
@@ -114,7 +146,13 @@ const ChatInner: React.FC = () => {
     return (
         <div className="flex flex-col h-screen bg-background">
             <Header onNewThread={startNewThread} />
-            <ChatContainer messages={messages} messageInProgress={messageInProgress} errorMessages={errorMessages} />
+            <ChatContainer
+                messages={messages}
+                messageInProgress={messageInProgress}
+                errorMessages={errorMessages}
+                onApproveCommand={handleApproveCommand}
+                onCancelCommand={handleCancelCommand}
+            />
             <InputContainer onSend={sendMessage} onCancel={cancelMessage} isProcessing={isProcessing} />
         </div>
     );

@@ -7,19 +7,34 @@ import ReactMarkdown from 'react-markdown';
 import hljs from 'highlight.js';
 import 'highlight.js/styles/vs2015.css'; // Use a dark theme compatible with VS Code
 
+// Add VSCode API to window type for TS
+declare global {
+    interface Window {
+        vscode: {
+            postMessage: (msg: any) => void;
+        };
+    }
+}
+
 interface Message {
-    role: 'user' | 'assistant';
+    role: 'user' | 'assistant' | 'pending-command';
     content: string;
     messageId?: number;
+    commandDetails?: {
+        command: string;
+        commandId: string;
+    };
 }
 
 interface ChatContainerProps {
     messages: Message[];
     messageInProgress: Message | null;
     errorMessages: string[]; // Keeping for backward compatibility but no longer using
+    onApproveCommand?: (commandId: string) => void;
+    onCancelCommand?: (commandId: string) => void;
 }
 
-const ChatContainer: React.FC<ChatContainerProps> = ({ messages, messageInProgress, errorMessages }) => {
+const ChatContainer: React.FC<ChatContainerProps> = ({ messages, messageInProgress, errorMessages, onApproveCommand, onCancelCommand }) => {
     const scrollAreaRef = useRef<HTMLDivElement>(null);
     const isAtBottomRef = useRef(true);
 
@@ -120,12 +135,58 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ messages, messageInProgre
                                 className={`rounded-md overflow-hidden border chat-message w-full ${
                                     msg.role === 'user'
                                         ? 'bg-[var(--vscode-button-background)] text-[var(--vscode-button-foreground)]'
-                                        : 'bg-[var(--vscode-editorWidget-background)] text-[var(--vscode-editor-foreground)]'
+                                        : msg.role === 'pending-command'
+                                            ? 'bg-[var(--vscode-input-background)] border-[var(--vscode-panel-border)]'
+                                            : 'bg-[var(--vscode-editorWidget-background)] text-[var(--vscode-editor-foreground)]'
                                 }`}
                             >
                                 <div className="p-3">
                                     {msg.role === 'user' ? (
                                         <div className="text-sm whitespace-pre-wrap overflow-wrap-anywhere">{msg.content}</div>
+                                    ) : msg.role === 'pending-command' && msg.commandDetails ? (
+                                        <div className="flex flex-col gap-2">
+                                            <div className="text-sm font-mono whitespace-pre-wrap overflow-wrap-anywhere mb-2">
+                                                <span className="font-semibold text-[var(--vscode-editor-foreground)]">Proposed command:</span>
+                                                <br />
+                                                <span className="bg-[var(--vscode-panel-background)] px-2 py-1 rounded text-xs">{msg.commandDetails.command}</span>
+                                            </div>
+                                            <div className="flex gap-2">
+                                                <Button
+                                                    variant="default"
+                                                    className="bg-[var(--vscode-button-background)] text-[var(--vscode-button-foreground)] hover:bg-[var(--vscode-button-hoverBackground)] px-4"
+                                                    onClick={() => {
+                                                        console.log('Continue clicked', msg.commandDetails?.commandId);
+                                                        if (onApproveCommand && msg.commandDetails?.commandId) {
+                                                            onApproveCommand(msg.commandDetails.commandId);
+                                                        } else {
+                                                            window.vscode.postMessage({
+                                                                command: 'approveCommand',
+                                                                commandId: msg.commandDetails?.commandId,
+                                                            });
+                                                        }
+                                                    }}
+                                                >
+                                                    Continue
+                                                </Button>
+                                                <Button
+                                                    variant="destructive"
+                                                    className="bg-[var(--vscode-inputValidation-errorBackground)] text-[var(--vscode-inputValidation-errorForeground)] hover:bg-[var(--vscode-inputValidation-errorBorder)] px-4"
+                                                    onClick={() => {
+                                                        console.log('Cancel clicked', msg.commandDetails?.commandId);
+                                                        if (onCancelCommand && msg.commandDetails?.commandId) {
+                                                            onCancelCommand(msg.commandDetails.commandId);
+                                                        } else {
+                                                            window.vscode.postMessage({
+                                                                command: 'cancelMessage',
+                                                                commandId: msg.commandDetails?.commandId,
+                                                            });
+                                                        }
+                                                    }}
+                                                >
+                                                    Cancel
+                                                </Button>
+                                            </div>
+                                        </div>
                                     ) : (
                                         <ReactMarkdown
                                             components={{
@@ -141,7 +202,7 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ messages, messageInProgre
                                                         </code>
                                                     );
                                                 },
-                                                div: ({ node, ...props }) => <div className="text-sm overflow-wrap-anywhere" {...props} />,
+                                                div: ({ node, ...props }) => <div className="text-sm overflow-wrap-anywhere" {...props} />, 
                                                 p: ({ node, ...props }) => <p className="overflow-wrap-anywhere" {...props} />
                                             }}
                                         >
@@ -181,7 +242,7 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ messages, messageInProgre
                                                         </code>
                                                     );
                                                 },
-                                                div: ({ node, ...props }) => <div className="text-sm overflow-wrap-anywhere" {...props} />,
+                                                div: ({ node, ...props }) => <div className="text-sm overflow-wrap-anywhere" {...props} />, 
                                                 p: ({ node, ...props }) => <p className="overflow-wrap-anywhere" {...props} />
                                             }}
                                         >

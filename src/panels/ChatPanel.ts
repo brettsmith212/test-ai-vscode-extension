@@ -13,6 +13,7 @@ export class ChatPanel {
     private _conversationHistory: Message[] = [];
     private _chatService: ChatService;
     private readonly _context: vscode.ExtensionContext;
+    private _pendingCommands: { [commandId: string]: { block: ToolUseBlock, resolve: Function, reject: Function } } = {};
 
     private static _instance: ChatPanel | undefined;
 
@@ -55,7 +56,18 @@ export class ChatPanel {
                         }
                         break;
                     case 'cancelMessage':
+                        if (message.commandId && this._pendingCommands[message.commandId]) {
+                            // Instead of pushing tool_result, resolve with a cancellation object
+                            this._pendingCommands[message.commandId].resolve({ cancelled: true });
+                            delete this._pendingCommands[message.commandId];
+                        }
                         this._cancelCurrentMessage();
+                        break;
+                    case 'approveCommand':
+                        if (message.commandId && this._pendingCommands[message.commandId]) {
+                            this._pendingCommands[message.commandId].resolve();
+                            delete this._pendingCommands[message.commandId];
+                        }
                         break;
                     case 'newThread':
                         this._startNewThread();
@@ -207,6 +219,26 @@ export class ChatPanel {
                     if (toolUseBlocks.length > 0) {
                         console.log(`Processing tool uses:`, toolUseBlocks.map(b => b.name));
                         const toolResults: ToolResultBlock[] = await Promise.all(toolUseBlocks.map(async (block) => {
+                            if (block.name === 'run_command') {
+                                // Pause for user approval
+                                const commandId = block.id || Math.random().toString(36).substring(2, 10);
+                                const userApproval = await new Promise<{ cancelled?: boolean }>((resolve) => {
+                                    this._pendingCommands[commandId] = {
+                                        block,
+                                        resolve: (value?: any) => resolve(value || {}),
+                                        reject: () => resolve({ cancelled: true }),
+                                    };
+                                    this._panel.webview.postMessage({
+                                        command: 'proposeCommand',
+                                        text: 'Approve running this terminal command?',
+                                        commandString: block.input.command,
+                                        commandId
+                                    });
+                                });
+                                if (userApproval.cancelled) {
+                                    return { type: 'tool_result', tool_use_id: block.id, content: 'User cancelled the command before execution.' };
+                                }
+                            }
                             try {
                                 console.log(`Executing tool: ${block.name} with input:`, block.input);
                                 const result = await this._chatService.handleToolCall({

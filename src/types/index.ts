@@ -26,4 +26,5 @@ export interface Message {
 export interface WebviewMessage {
     command: string;
     text?: string;
+    commandId?: string;
 }
