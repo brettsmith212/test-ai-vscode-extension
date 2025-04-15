@@ -38,6 +38,7 @@ interface ChatContainerProps {
 const ChatContainer: React.FC<ChatContainerProps> = ({ messages, messageInProgress, errorMessages, onApproveCommand, onCancelCommand, isProcessing }) => {
     const scrollAreaRef = useRef<HTMLDivElement>(null);
     const isAtBottomRef = useRef(true);
+    const [copiedCommands, setCopiedCommands] = useState<Record<string, boolean>>({});
 
     // Check if scroll is at bottom
     const checkScrollPosition = () => {
@@ -90,6 +91,16 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ messages, messageInProgre
             hljs.highlightElement(block as HTMLElement);
         });
     }, [messages, messageInProgress]);
+
+    // Handle copying command to clipboard
+    const handleCopyCommand = (commandId: string, commandText: string) => {
+        navigator.clipboard.writeText(commandText).then(() => {
+            setCopiedCommands({ ...copiedCommands, [commandId]: true });
+            setTimeout(() => {
+                setCopiedCommands(prev => ({ ...prev, [commandId]: false }));
+            }, 2000);
+        });
+    };
 
     // Custom CodeBlock component with copy button
     const CodeBlock: React.FC<{ className?: string; children: React.ReactNode }> = ({ className, children }) => {
@@ -149,10 +160,25 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ messages, messageInProgre
                                             <div className="text-sm whitespace-pre-wrap overflow-wrap-anywhere mb-2">
                                                 <span className="font-semibold text-[var(--vscode-editor-foreground)]">Proposed command:</span>
                                                 <br />
-                                                <div className="code-block mt-1">
-                                                    <pre className="bg-[var(--vscode-editor-background)] p-2 rounded">
-                                                        <code className="text-[var(--vscode-editor-foreground)] font-mono text-xs">{msg.commandDetails.command}</code>
-                                                    </pre>
+                                                <div className="code-block group mt-1">
+                                                    <code className="text-[var(--vscode-editor-foreground)] font-mono text-xs block">
+                                                        {msg.commandDetails.command}
+                                                    </code>
+                                                    <div className="copy-button-container">
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            onClick={() => {
+                                                                if (msg.commandDetails) {
+                                                                    handleCopyCommand(msg.commandDetails.commandId, msg.commandDetails.command);
+                                                                }
+                                                            }}
+                                                            className="h-6 w-6 text-[var(--vscode-button-foreground)] hover:bg-[var(--vscode-button-hoverBackground)]"
+                                                            title="Copy command"
+                                                        >
+                                                            {msg.commandDetails && copiedCommands[msg.commandDetails.commandId] ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                                                        </Button>
+                                                    </div>
                                                 </div>
                                             </div>
                                             <div className="flex gap-2">

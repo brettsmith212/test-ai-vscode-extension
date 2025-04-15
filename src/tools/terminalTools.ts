@@ -127,7 +127,7 @@ export async function executeTerminalCommand(
     terminal.show();
     terminal.sendText(command, true);
 
-    return `Command executed: ${command}\n\nOutput has been captured and is available via read_terminal_output.`;
+    return `Command executed: ${command}`;
   } catch (error) {
     console.error('Error executing terminal command:', error);
     return `Error executing command: ${error instanceof Error ? error.message : String(error)}`;
