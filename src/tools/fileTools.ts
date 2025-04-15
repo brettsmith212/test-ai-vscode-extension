@@ -41,7 +41,7 @@ export const fileTools: Anthropic.Tool[] = [
   },
   {
     name: "read_file",
-    description: "Reads the content of a file by searching for it recursively in the workspace, including the root directory. Use this to inspect a file to answer a question or perform an action. Provide the file name (e.g., 'main.go') or a relative path (e.g., 'cmd/main.go'). If multiple files match, you will need to specify the full path.",
+    description: "Reads the content of a file by searching for it recursively in the workspace, including the root directory. Use this to inspect a file to answer a question or perform an action. Provide the file name (e.g., 'main.go') or a relative path (e.g., 'cmd/main.go'). If multiple files match, you will need to specify the full path. If you do not know the path, use the 'search_files' tool first to find the file before reading or operating on it.",
     input_schema: {
       type: "object",
       properties: {
@@ -52,7 +52,7 @@ export const fileTools: Anthropic.Tool[] = [
   },
   {
     name: "search_files",
-    description: "Searches for files in the workspace that match the given query. Returns a list of file paths.",
+    description: "Searches for files in the workspace that match the given query. Returns a list of file paths. Use this tool to find the location of a file before operating on it if the path is not fully specified.",
     input_schema: {
       type: "object",
       properties: {
