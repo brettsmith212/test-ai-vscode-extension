@@ -81,12 +81,6 @@ const ChatInner: React.FC = () => {
                 case 'cancelSuccess':
                     setIsProcessing(false);
                     setMessageInProgress(null);
-                    toast({
-                        variant: "destructive",
-                        title: "Request Aborted",
-                        description: "",
-                        duration: 2000,
-                    });
                     break;
                 case 'clearChat':
                     setMessages([]);
