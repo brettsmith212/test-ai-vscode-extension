@@ -146,10 +146,14 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ messages, messageInProgre
                                         <div className="text-sm whitespace-pre-wrap overflow-wrap-anywhere">{msg.content}</div>
                                     ) : msg.role === 'pending-command' && msg.commandDetails ? (
                                         <div className="flex flex-col gap-2">
-                                            <div className="text-sm font-mono whitespace-pre-wrap overflow-wrap-anywhere mb-2">
+                                            <div className="text-sm whitespace-pre-wrap overflow-wrap-anywhere mb-2">
                                                 <span className="font-semibold text-[var(--vscode-editor-foreground)]">Proposed command:</span>
                                                 <br />
-                                                <span className="bg-[var(--vscode-panel-background)] px-2 py-1 rounded text-xs">{msg.commandDetails.command}</span>
+                                                <div className="code-block mt-1">
+                                                    <pre className="bg-[var(--vscode-editor-background)] p-2 rounded">
+                                                        <code className="text-[var(--vscode-editor-foreground)] font-mono text-xs">{msg.commandDetails.command}</code>
+                                                    </pre>
+                                                </div>
                                             </div>
                                             <div className="flex gap-2">
                                                 <Button
