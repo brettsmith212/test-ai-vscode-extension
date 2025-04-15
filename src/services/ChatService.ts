@@ -257,9 +257,9 @@ Current workspace context: You are in a VS Code environment with access to file 
     }
     
     // Handle terminal tools
-    if (name === "run_command") {
-      console.log("Executing terminal command:", input);
-      return await executeTerminalTool("run_command", input);
+    if (name === "run_command" || name === "read_terminal_output") {
+      console.log(`Executing terminal tool: ${name}`, input);
+      return await executeTerminalTool(name, input);
     }
     
     throw new Error(`Unknown tool: ${name}`);
