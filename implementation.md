@@ -56,7 +56,7 @@
   - **Step Dependencies**: Step 1, Step 2
   - **Agent Instructions**: Create tree view using VS Code's TreeDataProvider API. Group files into categories like "High Risk", "Documentation", "Tests", etc. Add icons and context menus for each item. Ensure clicking items opens the files.
 
-- [ ] Step 6: Add tree view commands and context menus
+- [x] Step 6: Add tree view commands and context menus
   - **Task**: Implement commands for tree view interactions (open diff, review file, etc.)
   - **Description**: Add interactive commands to the tree view items so users can perform actions like opening diffs, marking files as reviewed, or jumping to specific changes.
   - **Files**:

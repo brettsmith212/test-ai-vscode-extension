@@ -46,6 +46,56 @@
         "command": "amp-scm.showTreeStats",
         "title": "Show Statistics",
         "icon": "$(graph)"
+      },
+      {
+        "command": "amp-scm.collapseAllGroups",
+        "title": "Collapse All Groups",
+        "icon": "$(collapse-all)"
+      },
+      {
+        "command": "amp-scm.expandAllGroups",
+        "title": "Expand All Groups",
+        "icon": "$(expand-all)"
+      },
+      {
+        "command": "amp-scm.openFile",
+        "title": "Open File"
+      },
+      {
+        "command": "amp-scm.openFileDiff",
+        "title": "Open Diff",
+        "icon": "$(diff)"
+      },
+      {
+        "command": "amp-scm.markFileAsReviewed",
+        "title": "Mark as Reviewed",
+        "icon": "$(check)"
+      },
+      {
+        "command": "amp-scm.showFileDetails",
+        "title": "Show Details",
+        "icon": "$(info)"
+      },
+      {
+        "command": "amp-scm.copyFilePath",
+        "title": "Copy Path",
+        "icon": "$(copy)"
+      },
+      {
+        "command": "amp-scm.openAllFilesInGroup",
+        "title": "Open All Files"
+      },
+      {
+        "command": "amp-scm.markGroupAsReviewed",
+        "title": "Mark Group as Reviewed"
+      },
+      {
+        "command": "amp-scm.changeGrouping",
+        "title": "Change Grouping"
+      },
+      {
+        "command": "amp-scm.toggleFileCount",
+        "title": "Toggle File Count"
       }
     ],
     "menus": {
@@ -67,24 +117,59 @@
         {
           "command": "amp-scm.refreshTree",
           "when": "view == ampReview",
-          "group": "navigation"
+          "group": "navigation@1"
         },
         {
           "command": "amp-scm.showTreeStats",
           "when": "view == ampReview",
-          "group": "navigation"
+          "group": "navigation@2"
+        },
+        {
+          "command": "amp-scm.changeGrouping",
+          "when": "view == ampReview",
+          "group": "navigation@3"
+        },
+        {
+          "command": "amp-scm.collapseAllGroups",
+          "when": "view == ampReview",
+          "group": "navigation@4"
         }
       ],
       "view/item/context": [
         {
-          "command": "amp-scm.openDiff",
+          "command": "amp-scm.openFile",
           "when": "view == ampReview && viewItem == amp-review-file",
-          "group": "inline"
+          "group": "navigation@1"
         },
         {
-          "command": "amp-scm.markAsReviewed",
+          "command": "amp-scm.openFileDiff",
           "when": "view == ampReview && viewItem == amp-review-file",
-          "group": "inline"
+          "group": "navigation@2"
+        },
+        {
+          "command": "amp-scm.showFileDetails",
+          "when": "view == ampReview && viewItem == amp-review-file",
+          "group": "navigation@3"
+        },
+        {
+          "command": "amp-scm.markFileAsReviewed",
+          "when": "view == ampReview && viewItem == amp-review-file",
+          "group": "actions@1"
+        },
+        {
+          "command": "amp-scm.copyFilePath",
+          "when": "view == ampReview && viewItem == amp-review-file",
+          "group": "actions@2"
+        },
+        {
+          "command": "amp-scm.openAllFilesInGroup",
+          "when": "view == ampReview && viewItem == amp-review-group",
+          "group": "navigation@1"
+        },
+        {
+          "command": "amp-scm.markGroupAsReviewed",
+          "when": "view == ampReview && viewItem == amp-review-group",
+          "group": "actions@1"
         }
       ]
     },

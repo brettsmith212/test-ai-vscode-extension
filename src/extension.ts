@@ -4,6 +4,7 @@ import { ScmIntegrationService } from './services/ScmIntegrationService';
 import { DecorationManager } from './services/DecorationManager';
 import { HoverProvider } from './providers/HoverProvider';
 import { AmpReviewTreeProvider } from './providers/AmpReviewTreeProvider';
+import { TreeViewCommands } from './commands/TreeViewCommands';
 
 export function activate(context: vscode.ExtensionContext) {
     console.log('Claude Chat extension is now active!');
@@ -51,6 +52,10 @@ function initializeScmFeatures(context: vscode.ExtensionContext, scmService: Scm
         showCollapseAll: true,
         canSelectMany: false
     });
+    
+    // Initialize tree view commands
+    const treeViewCommands = new TreeViewCommands(treeProvider, scmService);
+    treeViewCommands.registerCommands(context);
 
     // Register existing chat command
     const openChatCommand = vscode.commands.registerCommand('claude-chat.openChat', () => {
@@ -110,17 +115,7 @@ function initializeScmFeatures(context: vscode.ExtensionContext, scmService: Scm
         decorationManager.showDecorationsStats();
     });
 
-    // Tree view commands
-    const refreshTreeCommand = vscode.commands.registerCommand('amp-scm.refreshTree', () => {
-        treeProvider.refresh();
-        vscode.window.showInformationMessage('Amp Review tree refreshed');
-    });
 
-    const showTreeStatsCommand = vscode.commands.registerCommand('amp-scm.showTreeStats', () => {
-        const stats = treeProvider.getStats();
-        const message = `Amp Review: ${stats.totalFiles} files (🔴 ${stats.riskDistribution.high} high, 🟡 ${stats.riskDistribution.medium} medium, 🟢 ${stats.riskDistribution.low} low risk)`;
-        vscode.window.showInformationMessage(message);
-    });
 
     // Register hover provider for all languages
     const hoverProviderDisposable = vscode.languages.registerHoverProvider(
@@ -137,14 +132,13 @@ function initializeScmFeatures(context: vscode.ExtensionContext, scmService: Scm
         markAsReviewedCommand,
         toggleDecorationsCommand,
         showDecorationsStatsCommand,
-        refreshTreeCommand,
-        showTreeStatsCommand,
         hoverProviderDisposable,
         treeView,
         scmService,
         decorationManager,
         hoverProvider,
-        treeProvider
+        treeProvider,
+        treeViewCommands
     );
 
     // Listen for SCM state changes
