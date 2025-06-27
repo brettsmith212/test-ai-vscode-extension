@@ -1,12 +1,16 @@
 import * as vscode from 'vscode';
 import { ChatPanel } from './panels/ChatPanel';
 import { ScmIntegrationService } from './services/ScmIntegrationService';
+import { DecorationManager } from './services/DecorationManager';
 
 export function activate(context: vscode.ExtensionContext) {
     console.log('Claude Chat extension is now active!');
 
     // Initialize SCM integration service
     const scmService = ScmIntegrationService.getInstance();
+    
+    // Initialize decoration manager
+    const decorationManager = new DecorationManager(context.extensionUri, scmService);
 
     // Register existing chat command
     const openChatCommand = vscode.commands.registerCommand('claude-chat.openChat', () => {
@@ -57,6 +61,15 @@ export function activate(context: vscode.ExtensionContext) {
         }
     });
 
+    // Additional decoration commands
+    const toggleDecorationsCommand = vscode.commands.registerCommand('amp-scm.toggleDecorations', () => {
+        decorationManager.toggleDecorations();
+    });
+
+    const showDecorationsStatsCommand = vscode.commands.registerCommand('amp-scm.showDecorationsStats', () => {
+        decorationManager.showDecorationsStats();
+    });
+
     // Register disposables
     context.subscriptions.push(
         openChatCommand,
@@ -64,7 +77,10 @@ export function activate(context: vscode.ExtensionContext) {
         refreshAnalysisCommand,
         openDiffCommand,
         markAsReviewedCommand,
-        scmService
+        toggleDecorationsCommand,
+        showDecorationsStatsCommand,
+        scmService,
+        decorationManager
     );
 
     // Listen for SCM state changes

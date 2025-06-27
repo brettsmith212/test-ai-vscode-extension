@@ -24,7 +24,7 @@
 
 ## File Decorations
 
-- [ ] Step 3: Implement text editor decorations for changed files
+- [x] Step 3: Implement text editor decorations for changed files
 
   - **Task**: Create decoration provider to add gutter icons and highlights to modified files
   - **Description**: Add visual indicators (icons, highlights) to changed lines in the editor using VS Code's TextEditorDecorationType API. This provides the first visual layer of the Amp experience.
