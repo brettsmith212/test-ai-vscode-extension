@@ -13,7 +13,7 @@
   - **Step Dependencies**: None
   - **Agent Instructions**: Create services that can detect git changes using VS Code's built-in git extension API. Focus on getting a list of modified files and their change types (added, modified, deleted).
 
-- [ ] Step 2: Register SCM commands and activation events
+- [x] Step 2: Register SCM commands and activation events
   - **Task**: Update package.json and extension.ts to register SCM-related commands and activation events
   - **Description**: Configure the extension to activate when SCM events occur and register commands that will be used for the Amp Review functionality.
   - **Files**:

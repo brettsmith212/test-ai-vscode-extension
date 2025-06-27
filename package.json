@@ -9,15 +9,60 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
       {
         "command": "claude-chat.openChat",
         "title": "Open Claude Chat"
+      },
+      {
+        "command": "amp-scm.reviewWithAmp",
+        "title": "Review with Amp",
+        "icon": "$(sparkle)"
+      },
+      {
+        "command": "amp-scm.refreshAnalysis",
+        "title": "Refresh Analysis",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "amp-scm.openDiff",
+        "title": "Open Diff"
+      },
+      {
+        "command": "amp-scm.markAsReviewed",
+        "title": "Mark as Reviewed"
       }
     ],
+    "menus": {
+      "scm/title": [
+        {
+          "command": "amp-scm.reviewWithAmp",
+          "group": "navigation",
+          "when": "scmProvider == git"
+        }
+      ],
+      "scm/resourceGroup/context": [
+        {
+          "command": "amp-scm.refreshAnalysis",
+          "group": "inline",
+          "when": "scmProvider == git"
+        }
+      ]
+    },
+    "views": {
+      "scm": [
+        {
+          "id": "ampReview",
+          "name": "Amp Review",
+          "when": "scmProvider == git"
+        }
+      ]
+    },
     "configuration": {
       "title": "Claude Chat",
       "properties": {
@@ -25,6 +70,16 @@
           "type": "string",
           "default": "",
           "description": "API key for Claude-3.5"
+        },
+        "ampScm.enableDecorations": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable file decorations for Amp analysis"
+        },
+        "ampScm.showRiskIndicators": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show risk level indicators in source control"
         }
       }
     }
