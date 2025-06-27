@@ -5,6 +5,7 @@ import { DecorationManager } from './services/DecorationManager';
 import { HoverProvider } from './providers/HoverProvider';
 import { AmpReviewTreeProvider } from './providers/AmpReviewTreeProvider';
 import { TreeViewCommands } from './commands/TreeViewCommands';
+import { SourceControlManager } from './providers/SourceControlDecorationProvider';
 
 export function activate(context: vscode.ExtensionContext) {
     console.log('Claude Chat extension is now active!');
@@ -56,6 +57,9 @@ function initializeScmFeatures(context: vscode.ExtensionContext, scmService: Scm
     // Initialize tree view commands
     const treeViewCommands = new TreeViewCommands(treeProvider, scmService);
     treeViewCommands.registerCommands(context);
+    
+    // Initialize source control decorations
+    const sourceControlManager = new SourceControlManager(scmService);
 
     // Register existing chat command
     const openChatCommand = vscode.commands.registerCommand('claude-chat.openChat', () => {
@@ -138,7 +142,8 @@ function initializeScmFeatures(context: vscode.ExtensionContext, scmService: Scm
         decorationManager,
         hoverProvider,
         treeProvider,
-        treeViewCommands
+        treeViewCommands,
+        sourceControlManager
     );
 
     // Listen for SCM state changes

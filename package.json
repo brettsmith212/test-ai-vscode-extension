@@ -96,13 +96,43 @@
       {
         "command": "amp-scm.toggleFileCount",
         "title": "Toggle File Count"
+      },
+      {
+        "command": "amp-scm.showEnhancedFileDetails",
+        "title": "Show Enhanced Details",
+        "icon": "$(info)"
+      },
+      {
+        "command": "amp-scm.openFileWithAnalysis",
+        "title": "Open with Analysis",
+        "icon": "$(graph)"
+      },
+      {
+        "command": "amp-scm.showAnalysisPicker",
+        "title": "Show Analysis Picker",
+        "icon": "$(list-selection)"
+      },
+      {
+        "command": "amp-scm.generateAnalysisReport",
+        "title": "Generate Analysis Report",
+        "icon": "$(file-text)"
       }
     ],
     "menus": {
       "scm/title": [
         {
           "command": "amp-scm.reviewWithAmp",
-          "group": "navigation",
+          "group": "navigation@1",
+          "when": "scmProvider == git"
+        },
+        {
+          "command": "amp-scm.showAnalysisPicker",
+          "group": "navigation@2",
+          "when": "scmProvider == git"
+        },
+        {
+          "command": "amp-scm.generateAnalysisReport",
+          "group": "navigation@3",
           "when": "scmProvider == git"
         }
       ],
@@ -111,6 +141,18 @@
           "command": "amp-scm.refreshAnalysis",
           "group": "inline",
           "when": "scmProvider == git"
+        }
+      ],
+      "scm/resourceState/context": [
+        {
+          "command": "amp-scm.showEnhancedFileDetails",
+          "when": "scmProvider == git",
+          "group": "1_analysis@1"
+        },
+        {
+          "command": "amp-scm.openFileWithAnalysis",
+          "when": "scmProvider == git",
+          "group": "1_analysis@2"
         }
       ],
       "view/title": [

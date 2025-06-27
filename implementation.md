@@ -67,7 +67,7 @@
 
 ## Polish and Integration
 
-- [ ] Step 7: Add source control resource decorations
+- [x] Step 7: Add source control resource decorations
 
   - **Task**: Enhance the built-in source control file list with Amp-specific decorations
   - **Description**: Add badges, icons, and tooltips to files in the standard VS Code source control view to show Amp analysis results without requiring users to switch to the custom tree view.
