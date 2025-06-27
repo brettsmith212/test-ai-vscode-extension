@@ -2,15 +2,46 @@ import * as vscode from 'vscode';
 import { ChatPanel } from './panels/ChatPanel';
 import { ScmIntegrationService } from './services/ScmIntegrationService';
 import { DecorationManager } from './services/DecorationManager';
+import { HoverProvider } from './providers/HoverProvider';
 
 export function activate(context: vscode.ExtensionContext) {
     console.log('Claude Chat extension is now active!');
 
-    // Initialize SCM integration service
-    const scmService = ScmIntegrationService.getInstance();
+    // Initialize SCM integration service with retries
+    initializeWithRetry(context, 0);
+}
+
+async function initializeWithRetry(context: vscode.ExtensionContext, attempt: number) {
+    const maxAttempts = 3;
+    const delay = 1000 * (attempt + 1); // 1s, 2s, 3s delays
+    
+    console.log(`Initializing SCM integration (attempt ${attempt + 1}/${maxAttempts})`);
+    
+    setTimeout(async () => {
+        const scmService = ScmIntegrationService.getInstance();
+        
+        // Check if git repos were found
+        const state = scmService.getState();
+        const hasRepos = state.repositories.length > 0;
+        
+        if (hasRepos || attempt >= maxAttempts - 1) {
+            // Success or final attempt
+            console.log(`Found ${state.repositories.length} repositories, ${state.analyzedFiles.size} files analyzed`);
+            initializeScmFeatures(context, scmService);
+        } else {
+            console.log('No git repositories found, retrying...');
+            initializeWithRetry(context, attempt + 1);
+        }
+    }, delay);
+}
+
+function initializeScmFeatures(context: vscode.ExtensionContext, scmService: ScmIntegrationService) {
     
     // Initialize decoration manager
     const decorationManager = new DecorationManager(context.extensionUri, scmService);
+    
+    // Initialize hover provider
+    const hoverProvider = new HoverProvider(scmService);
 
     // Register existing chat command
     const openChatCommand = vscode.commands.registerCommand('claude-chat.openChat', () => {
@@ -70,6 +101,12 @@ export function activate(context: vscode.ExtensionContext) {
         decorationManager.showDecorationsStats();
     });
 
+    // Register hover provider for all languages
+    const hoverProviderDisposable = vscode.languages.registerHoverProvider(
+        { scheme: 'file' }, // Apply to all file schemes
+        hoverProvider
+    );
+
     // Register disposables
     context.subscriptions.push(
         openChatCommand,
@@ -79,8 +116,10 @@ export function activate(context: vscode.ExtensionContext) {
         markAsReviewedCommand,
         toggleDecorationsCommand,
         showDecorationsStatsCommand,
+        hoverProviderDisposable,
         scmService,
-        decorationManager
+        decorationManager,
+        hoverProvider
     );
 
     // Listen for SCM state changes

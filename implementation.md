@@ -35,7 +35,7 @@
   - **Step Dependencies**: Step 1, Step 2
   - **Agent Instructions**: Create different decoration types for different kinds of changes (risky, safe, documentation). Use gutter decorations with custom icons and subtle highlighting. Make decorations update automatically when files change.
 
-- [ ] Step 4: Add hover providers for decoration rationale
+- [x] Step 4: Add hover providers for decoration rationale
   - **Task**: Implement hover cards that show AI-generated rationale for why lines changed
   - **Description**: When users hover over decorated lines, show contextual information explaining the change. This is the core "why did this change" feature from the PRD.
   - **Files**:

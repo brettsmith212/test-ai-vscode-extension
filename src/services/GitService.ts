@@ -60,14 +60,39 @@ export class GitService {
     private async initializeGitApi(): Promise<void> {
         try {
             const gitExtension = vscode.extensions.getExtension<GitExtension>('vscode.git');
+            console.log('Git extension found:', !!gitExtension);
+            
             if (gitExtension && !gitExtension.isActive) {
+                console.log('Activating git extension...');
                 await gitExtension.activate();
             }
 
             if (gitExtension) {
-                this.gitApi = gitExtension.exports.gitApi;
-                this.setupRepositoryListeners();
-                this.loadExistingRepositories();
+                console.log('Git extension exports:', Object.keys(gitExtension.exports || {}));
+                
+                // Try different ways to access the git API
+                if (gitExtension.exports?.gitApi) {
+                    this.gitApi = gitExtension.exports.gitApi;
+                } else if (gitExtension.exports && 'getAPI' in gitExtension.exports) {
+                    // Some versions use getAPI method
+                    this.gitApi = (gitExtension.exports as any).getAPI(1);
+                } else if (gitExtension.exports && 'repositories' in gitExtension.exports) {
+                    // Fallback - some versions export the API directly
+                    this.gitApi = gitExtension.exports as any;
+                }
+                
+                console.log('Git API initialized:', !!this.gitApi);
+                console.log('Git API keys:', this.gitApi ? Object.keys(this.gitApi) : 'none');
+                console.log('Number of repositories:', this.gitApi?.repositories?.length || 0);
+                
+                if (this.gitApi) {
+                    this.setupRepositoryListeners();
+                    this.loadExistingRepositories();
+                } else {
+                    console.error('Could not access git API');
+                }
+            } else {
+                console.error('Git extension not found');
             }
         } catch (error) {
             console.error('Failed to initialize Git API:', error);
@@ -75,7 +100,9 @@ export class GitService {
     }
 
     private setupRepositoryListeners(): void {
-        if (!this.gitApi) return;
+        if (!this.gitApi) {
+            return;
+        }
 
         this.disposables.push(
             this.gitApi.onDidOpenRepository(repo => {
@@ -88,11 +115,17 @@ export class GitService {
     }
 
     private loadExistingRepositories(): void {
-        if (!this.gitApi) return;
+        if (!this.gitApi) {
+            console.log('No git API available');
+            return;
+        }
 
+        console.log('Loading existing repositories...');
         for (const repo of this.gitApi.repositories) {
+            console.log('Found repository:', repo.rootUri.fsPath);
             this.repositories.set(repo.rootUri.fsPath, repo);
         }
+        console.log('Total repositories loaded:', this.repositories.size);
     }
 
     public async getRepositories(): Promise<GitRepository[]> {
@@ -138,7 +171,6 @@ export class GitService {
         for (const change of repo.state.untrackedChanges) {
             changes.push(this.convertChangeToGitFileChange(change, workspaceRoot));
         }
-
         return changes;
     }
 
@@ -178,11 +210,21 @@ export class GitService {
 
         // Listen for repository state changes
         for (const repo of this.repositories.values()) {
-            disposables.push(
-                repo.onDidChangeState(() => {
-                    this.getRepositories().then(callback);
-                })
-            );
+            try {
+                // Try the standard onDidChangeState method
+                if (repo.onDidChangeState && typeof repo.onDidChangeState === 'function') {
+                    disposables.push(
+                        repo.onDidChangeState(() => {
+                            this.getRepositories().then(callback);
+                        })
+                    );
+                } else {
+                    // Note: Some git extension versions don't support change events
+                    // This is fine - decorations will update when files are opened/saved
+                }
+            } catch (error) {
+                console.warn('Failed to register repository change listener:', error);
+            }
         }
 
         // Listen for new repositories
