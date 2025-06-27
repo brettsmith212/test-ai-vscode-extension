@@ -36,6 +36,16 @@
       {
         "command": "amp-scm.markAsReviewed",
         "title": "Mark as Reviewed"
+      },
+      {
+        "command": "amp-scm.refreshTree",
+        "title": "Refresh Tree",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "amp-scm.showTreeStats",
+        "title": "Show Statistics",
+        "icon": "$(graph)"
       }
     ],
     "menus": {
@@ -51,6 +61,30 @@
           "command": "amp-scm.refreshAnalysis",
           "group": "inline",
           "when": "scmProvider == git"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "amp-scm.refreshTree",
+          "when": "view == ampReview",
+          "group": "navigation"
+        },
+        {
+          "command": "amp-scm.showTreeStats",
+          "when": "view == ampReview",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "amp-scm.openDiff",
+          "when": "view == ampReview && viewItem == amp-review-file",
+          "group": "inline"
+        },
+        {
+          "command": "amp-scm.markAsReviewed",
+          "when": "view == ampReview && viewItem == amp-review-file",
+          "group": "inline"
         }
       ]
     },
@@ -80,6 +114,28 @@
           "type": "boolean",
           "default": true,
           "description": "Show risk level indicators in source control"
+        },
+        "ampScm.treeView.groupBy": {
+          "type": "string",
+          "enum": ["risk", "category", "fileType"],
+          "default": "risk",
+          "description": "How to group files in the Amp Review tree"
+        },
+        "ampScm.treeView.showFileCount": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show file count in tree group labels"
+        },
+        "ampScm.treeView.expandGroups": {
+          "type": "boolean",
+          "default": true,
+          "description": "Expand tree groups by default"
+        },
+        "ampScm.treeView.sortOrder": {
+          "type": "string",
+          "enum": ["alphabetical", "priority", "riskLevel"],
+          "default": "priority",
+          "description": "Sort order for tree groups"
         }
       }
     }
