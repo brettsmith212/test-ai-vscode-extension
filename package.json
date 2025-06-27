@@ -116,6 +116,16 @@
         "command": "amp-scm.generateAnalysisReport",
         "title": "Generate Analysis Report",
         "icon": "$(file-text)"
+      },
+      {
+        "command": "amp-scm.showWelcome",
+        "title": "Show Welcome Message",
+        "icon": "$(info)"
+      },
+      {
+        "command": "amp-scm.showDemoInfo",
+        "title": "Show Demo Information",
+        "icon": "$(question)"
       }
     ],
     "menus": {
@@ -263,6 +273,11 @@
           "enum": ["alphabetical", "priority", "riskLevel"],
           "default": "priority",
           "description": "Sort order for tree groups"
+        },
+        "ampScm.hasShownWelcome": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether the welcome message has been shown"
         }
       }
     }

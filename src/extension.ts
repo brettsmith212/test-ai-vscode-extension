@@ -119,6 +119,40 @@ function initializeScmFeatures(context: vscode.ExtensionContext, scmService: Scm
         decorationManager.showDecorationsStats();
     });
 
+    // Demo and utility commands
+    const showWelcomeCommand = vscode.commands.registerCommand('amp-scm.showWelcome', () => {
+        const welcomeMessage = `🎉 Welcome to Amp SCM Integration!\n\n` +
+                              `This extension enhances VS Code's Source Control with AI-powered analysis.\n\n` +
+                              `✨ Features:\n` +
+                              `• File risk assessment with visual indicators\n` +
+                              `• Detailed hover cards with AI rationale\n` +
+                              `• Organized tree view with grouping options\n` +
+                              `• Rich context menus and analysis reports\n\n` +
+                              `🚀 Get started by making some file changes and clicking "Review with Amp"!`;
+        
+        vscode.window.showInformationMessage(welcomeMessage, { modal: true }, 'Open Source Control')
+            .then(action => {
+                if (action === 'Open Source Control') {
+                    vscode.commands.executeCommand('workbench.view.scm');
+                }
+            });
+    });
+
+    const showDemoInfoCommand = vscode.commands.registerCommand('amp-scm.showDemoInfo', () => {
+        const demoInfo = `📊 Amp SCM Demo Information\n\n` +
+                        `This is a demonstration of enhanced Source Control integration.\n\n` +
+                        `🎯 Current Features:\n` +
+                        `• Real git change detection\n` +
+                        `• Mock AI analysis with realistic scenarios\n` +
+                        `• Visual risk indicators and confidence scores\n` +
+                        `• Interactive tree view with grouping\n` +
+                        `• Rich hover cards and context menus\n\n` +
+                        `📝 Note: This demo uses mock analysis data.\n` +
+                        `In production, this would connect to actual AI services.`;
+        
+        vscode.window.showInformationMessage(demoInfo, { modal: true });
+    });
+
 
 
     // Register hover provider for all languages
@@ -136,6 +170,8 @@ function initializeScmFeatures(context: vscode.ExtensionContext, scmService: Scm
         markAsReviewedCommand,
         toggleDecorationsCommand,
         showDecorationsStatsCommand,
+        showWelcomeCommand,
+        showDemoInfoCommand,
         hoverProviderDisposable,
         treeView,
         scmService,
@@ -159,6 +195,17 @@ function initializeScmFeatures(context: vscode.ExtensionContext, scmService: Scm
     );
 
     console.log('Amp SCM integration initialized');
+    
+    // Show welcome message on first activation
+    const config = vscode.workspace.getConfiguration('ampScm');
+    const hasShownWelcome = config.get<boolean>('hasShownWelcome', false);
+    
+    if (!hasShownWelcome) {
+        setTimeout(() => {
+            vscode.commands.executeCommand('amp-scm.showWelcome');
+            config.update('hasShownWelcome', true, vscode.ConfigurationTarget.Global);
+        }, 2000); // Show after 2 seconds to let everything load
+    }
 }
 
 export function deactivate() {}

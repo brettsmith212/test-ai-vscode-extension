@@ -1,0 +1,371 @@
+/* Amp SCM Custom Decorations */
+
+/* High risk file decorations */
+.amp-risk-high {
+    border-left: 3px solid var(--vscode-errorForeground);
+    background-color: rgba(244, 67, 54, 0.1);
+}
+
+.amp-risk-high .monaco-icon-label::before {
+    color: var(--vscode-errorForeground) !important;
+}
+
+/* Medium risk file decorations */
+.amp-risk-medium {
+    border-left: 3px solid var(--vscode-warningForeground);
+    background-color: rgba(255, 152, 0, 0.1);
+}
+
+.amp-risk-medium .monaco-icon-label::before {
+    color: var(--vscode-warningForeground) !important;
+}
+
+/* Low risk file decorations */
+.amp-risk-low {
+    border-left: 3px solid var(--vscode-foreground);
+    background-color: rgba(76, 175, 80, 0.05);
+}
+
+.amp-risk-low .monaco-icon-label::before {
+    color: var(--vscode-foreground) !important;
+}
+
+/* Confidence indicators */
+.amp-confidence-high::after {
+    content: "✓";
+    color: var(--vscode-foreground);
+    font-weight: bold;
+    margin-left: 4px;
+}
+
+.amp-confidence-low::after {
+    content: "?";
+    color: var(--vscode-warningForeground);
+    font-weight: bold;
+    margin-left: 4px;
+}
+
+/* Category badges */
+.amp-category-test {
+    position: relative;
+}
+
+.amp-category-test::before {
+    content: "🧪";
+    position: absolute;
+    right: -20px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 12px;
+}
+
+.amp-category-documentation {
+    position: relative;
+}
+
+.amp-category-documentation::before {
+    content: "📚";
+    position: absolute;
+    right: -20px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 12px;
+}
+
+.amp-category-config {
+    position: relative;
+}
+
+.amp-category-config::before {
+    content: "⚙️";
+    position: absolute;
+    right: -20px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 12px;
+}
+
+.amp-category-feature {
+    position: relative;
+}
+
+.amp-category-feature::before {
+    content: "✨";
+    position: absolute;
+    right: -20px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 12px;
+}
+
+.amp-category-bugfix {
+    position: relative;
+}
+
+.amp-category-bugfix::before {
+    content: "🐛";
+    position: absolute;
+    right: -20px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 12px;
+}
+
+.amp-category-refactor {
+    position: relative;
+}
+
+.amp-category-refactor::before {
+    content: "♻️";
+    position: absolute;
+    right: -20px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 12px;
+}
+
+/* Tree view enhancements */
+.amp-tree-group-high {
+    color: var(--vscode-errorForeground);
+    font-weight: 600;
+}
+
+.amp-tree-group-medium {
+    color: var(--vscode-warningForeground);
+    font-weight: 500;
+}
+
+.amp-tree-group-low {
+    color: var(--vscode-foreground);
+    font-weight: normal;
+}
+
+.amp-tree-file {
+    opacity: 0.9;
+    transition: opacity 0.2s ease;
+}
+
+.amp-tree-file:hover {
+    opacity: 1;
+    background-color: var(--vscode-list-hoverBackground);
+}
+
+/* Coverage impact indicators */
+.amp-coverage-positive {
+    position: relative;
+}
+
+.amp-coverage-positive::after {
+    content: "📈";
+    position: absolute;
+    right: -40px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 10px;
+}
+
+.amp-coverage-negative {
+    position: relative;
+}
+
+.amp-coverage-negative::after {
+    content: "📉";
+    position: absolute;
+    right: -40px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 10px;
+}
+
+/* Hover card enhancements */
+.amp-hover-card {
+    border: 1px solid var(--vscode-widget-border);
+    border-radius: 6px;
+    padding: 12px;
+    background: var(--vscode-editorHoverWidget-background);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.amp-hover-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.amp-hover-risk-badge {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: bold;
+    margin-right: 8px;
+}
+
+.amp-hover-risk-high {
+    background-color: var(--vscode-errorForeground);
+    color: var(--vscode-editor-background);
+}
+
+.amp-hover-risk-medium {
+    background-color: var(--vscode-warningForeground);
+    color: var(--vscode-editor-background);
+}
+
+.amp-hover-risk-low {
+    background-color: var(--vscode-foreground);
+    color: var(--vscode-editor-background);
+}
+
+.amp-hover-confidence {
+    font-size: 12px;
+    color: var(--vscode-descriptionForeground);
+}
+
+.amp-hover-actions {
+    margin-top: 8px;
+    display: flex;
+    gap: 8px;
+}
+
+.amp-hover-action {
+    padding: 4px 8px;
+    background: var(--vscode-button-background);
+    color: var(--vscode-button-foreground);
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 11px;
+    transition: background-color 0.2s ease;
+}
+
+.amp-hover-action:hover {
+    background: var(--vscode-button-hoverBackground);
+}
+
+/* Progress bars for confidence */
+.amp-progress-bar {
+    width: 100%;
+    height: 4px;
+    background: var(--vscode-progressBar-background);
+    border-radius: 2px;
+    overflow: hidden;
+    margin: 4px 0;
+}
+
+.amp-progress-fill {
+    height: 100%;
+    background: var(--vscode-progressBar-foreground);
+    transition: width 0.3s ease;
+}
+
+/* Animation for new analysis */
+@keyframes amp-analysis-pulse {
+    0% { opacity: 0.7; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.02); }
+    100% { opacity: 0.9; transform: scale(1); }
+}
+
+.amp-new-analysis {
+    animation: amp-analysis-pulse 1s ease-in-out;
+}
+
+/* Status indicators */
+.amp-status-analyzing::before {
+    content: "🔄";
+    animation: spin 1s linear infinite;
+    margin-right: 4px;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.amp-status-complete::before {
+    content: "✅";
+    margin-right: 4px;
+}
+
+.amp-status-error::before {
+    content: "❌";
+    margin-right: 4px;
+}
+
+/* Dark theme adjustments */
+.vscode-dark .amp-risk-high {
+    background-color: rgba(244, 67, 54, 0.15);
+}
+
+.vscode-dark .amp-risk-medium {
+    background-color: rgba(255, 152, 0, 0.15);
+}
+
+.vscode-dark .amp-risk-low {
+    background-color: rgba(76, 175, 80, 0.1);
+}
+
+/* Light theme adjustments */
+.vscode-light .amp-risk-high {
+    background-color: rgba(244, 67, 54, 0.08);
+}
+
+.vscode-light .amp-risk-medium {
+    background-color: rgba(255, 152, 0, 0.08);
+}
+
+.vscode-light .amp-risk-low {
+    background-color: rgba(76, 175, 80, 0.05);
+}
+
+/* High contrast theme adjustments */
+.vscode-high-contrast .amp-risk-high {
+    border-left-width: 4px;
+    background-color: transparent;
+}
+
+.vscode-high-contrast .amp-risk-medium {
+    border-left-width: 4px;
+    background-color: transparent;
+}
+
+.vscode-high-contrast .amp-risk-low {
+    border-left-width: 4px;
+    background-color: transparent;
+}
+
+/* Responsive design for different panel sizes */
+@media (max-width: 300px) {
+    .amp-category-test::before,
+    .amp-category-documentation::before,
+    .amp-category-config::before,
+    .amp-category-feature::before,
+    .amp-category-bugfix::before,
+    .amp-category-refactor::before {
+        display: none;
+    }
+    
+    .amp-coverage-positive::after,
+    .amp-coverage-negative::after {
+        display: none;
+    }
+}
+
+/* Accessibility improvements */
+.amp-screen-reader-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* Focus indicators */
+.amp-focusable:focus {
+    outline: 2px solid var(--vscode-focusBorder);
+    outline-offset: 2px;
+}
