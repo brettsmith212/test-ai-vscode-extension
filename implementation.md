@@ -2,7 +2,7 @@
 
 ## Foundation Setup
 
-- [ ] Step 1: Create SCM provider infrastructure
+- [x] Step 1: Create SCM provider infrastructure
 
   - **Task**: Set up the basic SCM integration infrastructure with git change detection
   - **Description**: Create the foundational classes and services needed to detect git changes and integrate with VS Code's SCM API. This establishes the core infrastructure that all other features will build upon.
